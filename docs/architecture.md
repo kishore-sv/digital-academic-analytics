@@ -9,9 +9,9 @@ Next.js Client (Bun)
         ↓
 FastAPI Backend (uv)
         ↓
-PostgreSQL
+PostgreSQL (Alembic migrations)
         ↓
-ML Prediction Layer (Pickle models)
+ML Prediction Layer (versioned Pickle models + SHAP)
 ```
 
 ## Layer Responsibilities
@@ -19,31 +19,38 @@ ML Prediction Layer (Pickle models)
 ### Next.js Client
 
 - Single application serving all user roles (admin, student, faculty, parent)
-- Role-specific route groups and layouts
+- Role-specific route groups and layouts with Next.js middleware guards
 - shadcn/ui components for all UI
-- Communicates with FastAPI backend via REST API
+- TanStack Query for server state; react-hook-form + zod for forms
+- JWT auth via httpOnly cookies (no localStorage)
 - Managed with Bun
 
 ### FastAPI Backend
 
 - REST API for all business operations
-- Authentication and authorization
+- Authentication (argon2-cffi + PyJWT) and authorization
 - Multi-tenant data isolation (backend-enforced)
-- Academic data management (students, faculty, departments, subjects, etc.)
-- ML inference via pickle model loading
+- Rate limiting on auth endpoints (slowapi)
+- Paginated list endpoints
+- PDF report generation (WeasyPrint)
+- ML inference with SHAP explainability
+- Schema managed by Alembic migrations
 - Managed with uv
 
 ### PostgreSQL
 
 - Persistent storage for all tenant data
 - Every tenant-owned record includes `institution_id`
-- Relational data: users, students, faculty, parents, departments, subjects, attendance, examinations, performance, goals
+- Tenant-scoped unique constraints and composite indexes
+- Audit fields (`created_at`, `updated_at`, `deleted_at`) on all entities
+- Migrations via Alembic
 
 ### ML Prediction Layer
 
-- Trained models stored as `.pkl` files in `ml/models/`
+- Versioned models: `ml/models/{model}_v{N}.pkl` + metrics JSON
 - Loaded by FastAPI at inference time via `backend/app/ml/`
 - Three models: performance prediction, at-risk detection, pass/fail prediction
+- SHAP explainability returned with at-risk and pass/fail predictions
 
 ## Architecture Diagram
 
@@ -55,54 +62,66 @@ flowchart TB
         Student["/student/*"]
         Faculty["/faculty/*"]
         Parent["/parent/*"]
+        TQ["TanStack Query"]
+        RHF["react-hook-form + zod"]
     end
 
     subgraph backend [FastAPI Backend]
-        AuthAPI["Authentication API"]
+        AuthAPI["Auth API argon2+JWT"]
+        RateLimit["slowapi rate limiting"]
         TenantLayer["Tenant Isolation"]
         Services["Business Services"]
-        MLInference["ML Inference"]
+        MLInference["ML Inference + SHAP"]
+        Reports["WeasyPrint PDF"]
+        Sentry["Sentry error tracking"]
     end
 
     subgraph data [Data Layer]
         PG[(PostgreSQL)]
-        Models["Pickle Models"]
+        Alembic["Alembic migrations"]
+        Models["Versioned Pickle Models"]
     end
 
-    client -->|REST API| backend
-    AuthAPI --> TenantLayer
+    client -->|"REST API httpOnly cookies"| backend
+    AuthAPI --> RateLimit
+    RateLimit --> TenantLayer
     TenantLayer --> Services
     Services --> PG
+    Alembic --> PG
     MLInference --> Models
     Services --> MLInference
+    Services --> Reports
+    Sentry -.->|"optional"| backend
 ```
 
 ## Authentication Flow
 
 ```mermaid
 sequenceDiagram
-    participant C as Client
-    participant A as FastAPI Auth API
-    participant D as Database
+    participant Browser
+    participant FastAPI
+    participant DB
 
-    C->>A: Login credentials
-    A->>D: Validate credentials
-    D-->>A: User + role + institution_id
-    A->>A: Check is_login_enabled
-    A-->>C: Auth token/session
-    C->>C: Redirect to role dashboard
+    Browser->>FastAPI: POST /api/auth/login
+    FastAPI->>FastAPI: slowapi rate check
+    FastAPI->>DB: verify credentials argon2
+    FastAPI->>FastAPI: check is_login_enabled
+    FastAPI->>FastAPI: issue JWT
+    FastAPI-->>Browser: Set-Cookie access_token httpOnly
+    Browser->>FastAPI: GET /api/students cookie auto-sent
+    FastAPI->>FastAPI: decode JWT extract institution_id
+    FastAPI->>DB: query with institution_id filter
 ```
 
-The authentication token/session contains:
-- `user_id`
-- `role` (admin, student, faculty, parent)
-- `institution_id` (tenant)
+JWT payload: `{ sub, role, institution_id, exp }` — never trust client-supplied values.
+
+See [security.md](security.md) for full specification.
 
 ## Multi-Tenant Architecture
 
-Each university/institution is an independent tenant. All data is scoped by `institution_id`. The backend derives the tenant from the authenticated session — never from client-supplied values.
+Each university/institution is an independent tenant. All data is scoped by `institution_id`. The backend derives the tenant from the authenticated JWT — never from client-supplied values.
 
-See [Multi-Tenancy](multi-tenancy.md) for details.
+See [multi-tenancy.md](multi-tenancy.md) for details.
 
 ## UI Architecture
 
@@ -116,6 +135,24 @@ Role-specific layouts with sidebar navigation:
 | `/parent/*` | Parent Sidebar + Header | Linked children |
 
 All UI uses shadcn/ui components exclusively. No other component libraries.
+
+## Technology Decisions
+
+| Area | Choice | Documentation |
+|------|--------|---------------|
+| Migrations | Alembic | [migrations.md](migrations.md) |
+| Password hashing | argon2-cffi | [security.md](security.md) |
+| Auth tokens | PyJWT in httpOnly cookies | [security.md](security.md) |
+| Rate limiting | slowapi | [security.md](security.md) |
+| Pagination | Offset-based `?page=&limit=` | [api-conventions.md](api-conventions.md) |
+| PDF reports | WeasyPrint | [reports.md](reports.md) |
+| Client data fetching | TanStack Query v5 | [frontend-stack.md](frontend-stack.md) |
+| Client forms | react-hook-form + zod | [frontend-stack.md](frontend-stack.md) |
+| ML versioning | `{model}_v{N}.pkl` + metrics JSON | [ml-evaluation.md](ml-evaluation.md) |
+| ML explainability | SHAP | [ml-evaluation.md](ml-evaluation.md) |
+| CI | GitHub Actions | [ci.md](ci.md) |
+| Observability | Sentry (optional) | [infrastructure.md](infrastructure.md) |
+| Dataset | Synthetic generator script | [dataset.md](dataset.md) |
 
 ## Security Rules
 
@@ -134,9 +171,17 @@ All UI uses shadcn/ui components exclusively. No other component libraries.
 
 ## Related Documentation
 
+- [Security](security.md)
 - [Authentication](authentication.md)
 - [Authorization](authorization.md)
 - [Multi-Tenancy](multi-tenancy.md)
 - [Database](database.md)
+- [Database Constraints](database-constraints.md)
+- [Migrations](migrations.md)
 - [API](api.md)
+- [API Conventions](api-conventions.md)
 - [ML Pipeline](ml-pipeline.md)
+- [ML Evaluation](ml-evaluation.md)
+- [Frontend Stack](frontend-stack.md)
+- [Infrastructure](infrastructure.md)
+- [CI](ci.md)

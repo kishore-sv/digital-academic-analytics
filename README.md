@@ -54,11 +54,12 @@ Each institution operates as an independent tenant with backend-enforced data is
 
 | Layer | Technologies |
 |-------|-------------|
-| **Client** | Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Bun |
-| **Backend** | FastAPI, Python, SQLAlchemy, uv |
-| **Database** | PostgreSQL |
-| **ML** | Pandas, NumPy, Scikit-learn, Pickle (.pkl) |
-| **Infrastructure** | Docker Compose (PostgreSQL) |
+| **Client** | Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query, react-hook-form, zod, Bun |
+| **Backend** | FastAPI, Python, SQLAlchemy, Alembic, argon2-cffi, PyJWT, slowapi, WeasyPrint, uv |
+| **Database** | PostgreSQL (Alembic migrations) |
+| **ML** | Pandas, NumPy, Scikit-learn, SHAP, versioned Pickle (.pkl) |
+| **CI** | GitHub Actions (pytest, ruff, eslint, build) |
+| **Infrastructure** | Docker Compose (PostgreSQL), Sentry (optional) |
 
 ## Repository Structure
 
@@ -98,6 +99,14 @@ Models are not yet trained. See [docs/ml-pipeline.md](docs/ml-pipeline.md).
 8. Integration, testing and deployment
 
 See [docs/development-phases.md](docs/development-phases.md) for details.
+
+## Immediate Next Steps (Phase 0)
+
+Before building Phase 5 backend or Phase 6 dashboards:
+
+1. **Synthetic dataset** — `cd ml && uv run python src/generate_synthetic.py` → [docs/dataset.md](docs/dataset.md)
+2. **Alembic init** — `cd backend && uv add alembic && uv run alembic init alembic` → [docs/migrations.md](docs/migrations.md)
+3. **Client libraries** — `cd client && bun add @tanstack/react-query react-hook-form zod @hookform/resolvers` → [docs/frontend-stack.md](docs/frontend-stack.md)
 
 ## Local Development Setup
 
@@ -144,21 +153,58 @@ uv sync
 
 ## Documentation
 
+### Core
+
 | Document | Description |
 |----------|-------------|
 | [overview.md](docs/overview.md) | Project overview and scope |
-| [architecture.md](docs/architecture.md) | System architecture |
+| [architecture.md](docs/architecture.md) | System architecture and technology decisions |
 | [features.md](docs/features.md) | Feature list by portal |
-| [user-roles.md](docs/user-roles.md) | User roles and access |
-| [ml-pipeline.md](docs/ml-pipeline.md) | ML pipeline and models |
-| [database.md](docs/database.md) | Planned database entities |
-| [api.md](docs/api.md) | Planned API categories |
 | [development-phases.md](docs/development-phases.md) | Implementation phases |
-| [authentication.md](docs/authentication.md) | Authentication architecture |
+
+### Database & API
+
+| Document | Description |
+|----------|-------------|
+| [database.md](docs/database.md) | Planned database entities |
+| [database-constraints.md](docs/database-constraints.md) | Indexes, uniqueness, audit fields |
+| [migrations.md](docs/migrations.md) | Alembic migration strategy |
+| [api.md](docs/api.md) | Planned API categories |
+| [api-conventions.md](docs/api-conventions.md) | Pagination, errors, response envelopes |
+
+### Auth & Security
+
+| Document | Description |
+|----------|-------------|
+| [authentication.md](docs/authentication.md) | Authentication flows |
+| [security.md](docs/security.md) | argon2, PyJWT, rate limiting |
+| [authorization.md](docs/authorization.md) | Role-permission matrix |
 | [onboarding.md](docs/onboarding.md) | Admin signup and onboarding |
 | [multi-tenancy.md](docs/multi-tenancy.md) | Multi-tenant isolation |
-| [authorization.md](docs/authorization.md) | Role-permission matrix |
+| [user-roles.md](docs/user-roles.md) | User roles and access |
 | [user-management.md](docs/user-management.md) | Admin user management |
+
+### ML
+
+| Document | Description |
+|----------|-------------|
+| [dataset.md](docs/dataset.md) | Dataset strategy (Phase 1 blocker) |
+| [ml-pipeline.md](docs/ml-pipeline.md) | ML pipeline and models |
+| [ml-evaluation.md](docs/ml-evaluation.md) | Metrics, versioning, SHAP explainability |
+
+### Frontend & Reports
+
+| Document | Description |
+|----------|-------------|
+| [frontend-stack.md](docs/frontend-stack.md) | TanStack Query, RHF, zod, auth handling |
+| [reports.md](docs/reports.md) | PDF export with WeasyPrint |
+
+### Infrastructure & CI
+
+| Document | Description |
+|----------|-------------|
+| [infrastructure.md](docs/infrastructure.md) | Environments, secrets, Sentry, backup |
+| [ci.md](docs/ci.md) | GitHub Actions CI pipeline |
 
 ## Scope Exclusions
 

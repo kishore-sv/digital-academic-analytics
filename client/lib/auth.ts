@@ -1,3 +1,5 @@
+// See docs/frontend-stack.md for httpOnly cookie auth strategy.
+
 import type { UserRole } from "@/types/auth";
 
 export interface AuthState {

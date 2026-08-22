@@ -1,4 +1,7 @@
-"""Database connection and session management (stub)."""
+"""Database connection and session management (stub).
+
+See docs/migrations.md — Alembic must be set up before models.
+"""
 
 # TODO: Implement SQLAlchemy engine and session factory
 # from sqlalchemy import create_engine

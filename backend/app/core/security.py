@@ -1,5 +1,7 @@
 """Authentication and security utilities (stub).
 
+See docs/security.md for argon2-cffi + PyJWT decisions.
+
 Planned token/session payload:
     {
         "user_id": str,
