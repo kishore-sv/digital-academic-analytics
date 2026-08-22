@@ -1,0 +1,40 @@
+export const ROUTES = {
+  auth: {
+    login: "/login",
+    signup: "/signup",
+  },
+  admin: {
+    dashboard: "/admin/dashboard",
+    students: "/admin/students",
+    departments: "/admin/departments",
+    subjects: "/admin/subjects",
+    analytics: "/admin/analytics",
+    predictions: "/admin/predictions",
+    atRisk: "/admin/at-risk",
+    reports: "/admin/reports",
+  },
+  student: {
+    dashboard: "/student/dashboard",
+    profile: "/student/profile",
+    performance: "/student/performance",
+    predictions: "/student/predictions",
+    improvement: "/student/improvement",
+    goals: "/student/goals",
+    reports: "/student/reports",
+  },
+  faculty: {
+    dashboard: "/faculty/dashboard",
+    students: "/faculty/students",
+    performance: "/faculty/performance",
+    predictions: "/faculty/predictions",
+    atRisk: "/faculty/at-risk",
+    reports: "/faculty/reports",
+  },
+  parent: {
+    dashboard: "/parent/dashboard",
+    performance: "/parent/performance",
+    predictions: "/parent/predictions",
+    improvement: "/parent/improvement",
+    reports: "/parent/reports",
+  },
+} as const;

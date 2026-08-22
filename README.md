@@ -1,0 +1,169 @@
+# PRJ_649 — Digital Academic Performance Monitoring and Institutional Analytics System
+
+**Team:** SMK
+
+**Members:**
+- Srivatsa Kamble — 20231CSE0257
+- Kishore S V — 20231CSE0260
+- Mohan A — 20231CSE0273
+
+**Guide:** Nayeem Akhtar Sholapur
+
+---
+
+## Project Overview
+
+A software-only academic performance monitoring and institutional analytics platform. The system enables universities and institutions to track student performance, generate analytics, predict outcomes, and identify at-risk students using machine learning — all within a secure multi-tenant architecture.
+
+## Problem Statement
+
+Educational institutions struggle to monitor student performance at scale, identify at-risk students early, and provide data-driven insights to administrators, faculty, students, and parents. Manual tracking and fragmented systems make it difficult to deliver timely interventions and institutional analytics.
+
+## Objectives
+
+- Provide a unified platform for academic performance monitoring across an institution
+- Enable ML-powered predictions for performance, pass/fail outcomes, and at-risk detection
+- Deliver role-specific dashboards for admins, students, faculty, and parents
+- Ensure complete data isolation between institutions (multi-tenant)
+- Support institutional, department, and subject-level analytics
+
+## Main Features
+
+| Portal | Key Capabilities |
+|--------|------------------|
+| **Institution Admin** | Analytics dashboard, department/subject analytics, student management, predictions, at-risk detection, reports |
+| **Student** | Academic profile, performance, predictions, improvement areas, goal setting, reports |
+| **Faculty** | Assigned students, performance tracking, predictions, at-risk students, reports |
+| **Parent** | Child performance, predictions, improvement areas, reports |
+
+## Architecture
+
+```
+Next.js Client (Bun)
+        ↓
+FastAPI Backend (uv)
+        ↓
+PostgreSQL
+        ↓
+ML Prediction Layer (Pickle models)
+```
+
+Each institution operates as an independent tenant with backend-enforced data isolation.
+
+## Technology Stack
+
+| Layer | Technologies |
+|-------|-------------|
+| **Client** | Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Bun |
+| **Backend** | FastAPI, Python, SQLAlchemy, uv |
+| **Database** | PostgreSQL |
+| **ML** | Pandas, NumPy, Scikit-learn, Pickle (.pkl) |
+| **Infrastructure** | Docker Compose (PostgreSQL) |
+
+## Repository Structure
+
+```
+digital-academic-analytics/
+├── client/          # Next.js frontend (Bun)
+├── backend/         # FastAPI API server (uv)
+├── ml/              # ML development & training (uv)
+├── docs/            # Project documentation
+├── docker-compose.yml
+├── .env.example
+└── README.md
+```
+
+## ML Pipeline
+
+```
+Dataset → Cleaning → EDA → Feature Engineering → Training → Evaluation → Pickle Model → FastAPI Inference → Dashboard
+```
+
+Three planned models:
+1. **Performance Prediction** — predicted marks, grade, performance category
+2. **At-Risk Detection** — low/medium/high risk with probability
+3. **Pass/Fail Prediction** — pass/fail outcome with probability
+
+Models are not yet trained. See [docs/ml-pipeline.md](docs/ml-pipeline.md).
+
+## Development Phases
+
+1. Dataset and problem definition
+2. Data preprocessing and EDA
+3. ML model development
+4. Model evaluation and finalization
+5. FastAPI backend and academic data system
+6. Analytics dashboards
+7. Large-scale data testing
+8. Integration, testing and deployment
+
+See [docs/development-phases.md](docs/development-phases.md) for details.
+
+## Local Development Setup
+
+### Prerequisites
+
+- [Bun](https://bun.sh) (client)
+- [uv](https://docs.astral.sh/uv/) (Python)
+- [Docker](https://www.docker.com/) (PostgreSQL)
+
+### 1. Start PostgreSQL
+
+```bash
+cp .env.example .env
+docker compose up -d
+```
+
+### 2. Client (Next.js)
+
+```bash
+cd client
+bun install
+bun run dev
+```
+
+Client runs at `http://localhost:3000`.
+
+### 3. Backend (FastAPI)
+
+```bash
+cd backend
+cp .env.example .env
+uv sync
+uv run uvicorn app.main:app --reload --port 8000
+```
+
+API runs at `http://localhost:8000`. Health check: `GET /health`.
+
+### 4. ML Development
+
+```bash
+cd ml
+uv sync
+```
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [overview.md](docs/overview.md) | Project overview and scope |
+| [architecture.md](docs/architecture.md) | System architecture |
+| [features.md](docs/features.md) | Feature list by portal |
+| [user-roles.md](docs/user-roles.md) | User roles and access |
+| [ml-pipeline.md](docs/ml-pipeline.md) | ML pipeline and models |
+| [database.md](docs/database.md) | Planned database entities |
+| [api.md](docs/api.md) | Planned API categories |
+| [development-phases.md](docs/development-phases.md) | Implementation phases |
+| [authentication.md](docs/authentication.md) | Authentication architecture |
+| [onboarding.md](docs/onboarding.md) | Admin signup and onboarding |
+| [multi-tenancy.md](docs/multi-tenancy.md) | Multi-tenant isolation |
+| [authorization.md](docs/authorization.md) | Role-permission matrix |
+| [user-management.md](docs/user-management.md) | Admin user management |
+
+## Scope Exclusions
+
+This project does **not** include: hardware/IoT, ESP32, RFID, sensors, GIS, blockchain, smart contracts, Kubernetes, Kafka, Spark, Redis, or microservices architecture.
+
+## License
+
+Academic project — PRJ_649, SMK Team.
