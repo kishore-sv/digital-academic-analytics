@@ -1,0 +1,33 @@
+{
+    "weights": {
+        "absence": 25,
+        "performance": 30,
+        "trend": 20,
+        "failure": 15,
+        "studytime": 10
+    },
+    "thresholds": {
+        "risk_level": {
+            "low_max": 30,
+            "medium_max": 60
+        },
+        "absence": {
+            "low_max": 4,
+            "medium_max": 9
+        },
+        "performance": {
+            "low_min": 12,
+            "medium_min": 10
+        },
+        "failures": {
+            "low": 0,
+            "medium": 1,
+            "high_min": 2
+        },
+        "studytime": {
+            "high": 1,
+            "medium": 2,
+            "low_min": 3
+        }
+    }
+}

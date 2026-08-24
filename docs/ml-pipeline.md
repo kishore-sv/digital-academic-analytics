@@ -2,142 +2,80 @@
 
 ## Overview
 
-The ML pipeline is developed separately in the `ml/` directory and integrated into the FastAPI backend for inference.
+The ML layer lives in `ml/` and provides three academic intelligence components trained on the **UCI Student Performance Dataset** (`student-mat.csv`). Inference code is in `ml/src/`; FastAPI integration is planned in `backend/app/ml/`.
 
-**Models have not been trained yet.** This document describes the planned pipeline and model specifications.
-
-For evaluation metrics, class imbalance handling, explainability, and versioning, see [ml-evaluation.md](ml-evaluation.md).
-
-For the dataset strategy (the first blocking task), see [dataset.md](dataset.md).
+For evaluation metrics see [ml-evaluation.md](ml-evaluation.md). For dataset details see [dataset.md](dataset.md). For inference API see [ml/docs/inference.md](../ml/docs/inference.md).
 
 ## Pipeline Stages
 
 ```
-Dataset (synthetic_academic_data.csv)
+UCI student-mat.csv
     ↓
-Data Cleaning
+Load & clean (no nulls)
     ↓
-EDA (Exploratory Data Analysis)
+EDA (notebooks)
     ↓
-Feature Engineering
+Feature/target split
     ↓
-Training (stratified 80/20 split)
+Preprocessing (ColumnTransformer in sklearn Pipeline)
     ↓
-Evaluation (metrics per model type)
+Training (80/20 split, random_state=42)
     ↓
-Versioned Pickle Model + metrics JSON
+Artifact export (.pkl or .json)
     ↓
-FastAPI Inference (with SHAP explainability)
+Python inference (ml/src/)
+    ↓
+FastAPI integration (planned)
     ↓
 Next.js Dashboard
 ```
 
-## Planned Models
+## Models
 
-### 1. Student Performance Prediction
+### 1. Student Performance Prediction (Model 1)
 
-**Inputs:**
-- Attendance percentage (computed from raw records)
-- Internal marks
-- Assignment marks
-- Previous GPA/CGPA
-- Previous semester marks
-- Backlogs
-- Academic history
+- **Type:** Regression (HistGradientBoostingRegressor)
+- **Target:** `G3` (final grade, 0–20)
+- **Inputs:** 32 UCI features (all columns except `G3`)
+- **Output:** `predicted_g3`
+- **Artifact:** `ml/models/model_1/performance_model.pkl`
+- **Metrics:** MAE 1.2321, RMSE 1.9348, R² 0.8174
 
-**Outputs:**
-- Predicted final marks
-- Predicted grade
-- Performance category
+### 2. Pass/Fail Prediction (Model 2)
 
-**Artifact:** `ml/models/performance_v1.pkl` + `performance_v1_metrics.json`
-**Metrics:** MAE, RMSE, R²
+- **Type:** Binary classification (Logistic Regression)
+- **Target:** `pass_fail` (PASS if G3 ≥ 10)
+- **Inputs:** 32 UCI features (excludes `G3`)
+- **Output:** `PASS`/`FAIL` + pass/fail probabilities
+- **Artifact:** `ml/models/model_2/pass_fail_model.pkl`
+- **Metrics:** Accuracy 0.8861, FAIL Recall 0.9231, FAIL F1 0.8421, ROC-AUC 0.9652
 
-### 2. At-Risk Student Detection
+### 3. At-Risk Detection (Model 3)
 
-**Inputs:**
-- Attendance percentage
-- Internal marks
-- Previous CGPA
-- Backlogs
-- Assignment performance
-- Previous results
-
-**Outputs:**
-- Low / Medium / High risk
-- Risk probability
-- Top-3 SHAP contributing factors
-
-**Artifact:** `ml/models/risk_v1.pkl` + `risk_v1_metrics.json`
-**Metrics:** Recall, F1 (primary); Precision, AUC-ROC (secondary)
-**Class imbalance:** `class_weight='balanced'`
-
-### 3. Pass/Fail Prediction
-
-**Inputs:**
-- Attendance percentage
-- Internal marks
-- Previous CGPA
-- Assignment marks
-- Backlogs
-- Academic history
-
-**Outputs:**
-- Pass / Fail
-- Probability
-- Top-3 SHAP contributing factors
-
-**Artifact:** `ml/models/pass_fail_v1.pkl` + `pass_fail_v1_metrics.json`
-**Metrics:** Recall, F1, AUC-ROC
-
-## Model Versioning
-
-Models are never silently overwritten. Each training run produces a new version:
-
-```
-ml/models/
-├── performance_v1.pkl
-├── performance_v1_metrics.json
-├── risk_v1.pkl
-├── risk_v1_metrics.json
-├── pass_fail_v1.pkl
-└── pass_fail_v1_metrics.json
-```
-
-Active version is configured via environment variables (`RISK_MODEL_VERSION=1`, etc.).
-
-## Inference Response (with Explainability)
-
-At-risk and pass/fail predictions include SHAP top factors:
-
-```json
-{
-  "student_id": "uuid",
-  "risk_level": "high",
-  "risk_probability": 0.87,
-  "top_factors": [
-    { "feature": "attendance_percentage", "impact": -0.31, "value": 62.0 },
-    { "feature": "internal_marks_avg", "impact": -0.22, "value": 45.0 },
-    { "feature": "backlogs", "impact": -0.18, "value": 2 }
-  ]
-}
-```
+- **Type:** Rule-based weighted risk engine (**not ML**)
+- **Inputs:** `absences`, `G1`, `G2`, `failures`, `studytime` (no G3)
+- **Output:** `risk_score` (0–100), `risk_level` (LOW/MEDIUM/HIGH), `risk_indicators`
+- **Artifact:** `ml/models/model_3/risk_engine_config.json`
 
 ## Development Location
 
 | Stage | Location |
 |-------|----------|
-| Raw data | `ml/datasets/raw/` |
-| Processed data | `ml/datasets/processed/` |
-| Notebooks | `ml/notebooks/` |
-| Training scripts | `ml/src/` |
-| Trained models | `ml/models/` (versioned) |
-| Inference | `backend/app/ml/` |
+| Raw data | `ml/data/raw/student-mat.csv` |
+| Notebooks | `ml/notebooks/model_{1,2,3}/` |
+| Inference | `ml/src/` |
+| Trained models | `ml/models/model_{1,2,3}/` |
+| Backend integration | `backend/app/ml/` (stub) |
+
+## ERP Field Mapping (Future)
+
+Current models use UCI columns (`G1`, `G2`, `absences`, etc.). ERP fields such as attendance %, internal marks, and CGPA require retraining when institutional data is available.
 
 ## Related Documentation
 
 - [Dataset](dataset.md)
 - [ML Evaluation](ml-evaluation.md)
+- [ML README](../ml/README.md)
+- [ML Architecture](../ml/docs/ml_architecture.md)
 - [Architecture](architecture.md)
 - [Development Phases](development-phases.md)
-- [Reports](reports.md)

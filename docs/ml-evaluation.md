@@ -1,152 +1,82 @@
-# ML Evaluation, Versioning, and Explainability
+# ML Evaluation
 
-This document defines evaluation metrics, class imbalance handling, model versioning, and explainability requirements for all three ML models.
-
-**Models have not been trained yet.**
+Evaluation metrics for the three academic intelligence components, derived from Colab notebook training on the UCI `student-mat.csv` dataset.
 
 ## Train/Test Split
 
-- **80% training / 20% test** for all models
-- **Stratified split** by outcome class for at-risk and pass/fail models (preserves class proportions)
-- Random seed fixed (`random_state=42`) for reproducibility
-- No data from the test set used during training or hyperparameter tuning
+| Model | Split | Stratify | random_state |
+|-------|-------|----------|--------------|
+| Model 1 (regression) | 80/20 | No | 42 |
+| Model 2 (classification) | 80/20 | Yes (`pass_fail`) | 42 |
+| Model 3 (rule engine) | Full dataset validation | N/A | N/A |
 
-## Evaluation Metrics by Model
+## Model 1 — Performance Prediction (Regression)
 
-| Model | Type | Primary metrics | Secondary metrics |
-|-------|------|----------------|-------------------|
-| Performance prediction | Regression | MAE, RMSE | R² |
-| At-risk detection | Classification | **Recall, F1** | Precision, AUC-ROC |
-| Pass/fail prediction | Classification | **Recall, F1, AUC-ROC** | Precision |
+| Metric | Value |
+|--------|-------|
+| MAE | 1.2321 |
+| RMSE | 1.9348 |
+| R² | 0.8174 |
 
-### Why Recall and F1 for Classification Models
+**Algorithm:** HistGradientBoostingRegressor in sklearn Pipeline
 
-In academic intervention systems, **false negatives are worse than false positives**:
+## Model 2 — Pass/Fail Prediction (Classification)
 
-- **False negative** (at-risk): A struggling student is not flagged → no intervention → potential academic failure
-- **False positive** (at-risk): A student is flagged but is actually fine → unnecessary check-in (low cost)
+| Metric | Value |
+|--------|-------|
+| Accuracy | 0.8861 |
+| Precision (FAIL) | 0.7742 |
+| Recall (FAIL) | 0.9231 |
+| F1 (FAIL) | 0.8421 |
+| ROC-AUC | 0.9652 |
 
-Accuracy alone is misleading when at-risk students are a minority class (typically 10–20% of a cohort). A model predicting "not at-risk" for everyone would score 80–90% accuracy while missing every struggling student.
+**Algorithm:** Logistic Regression in sklearn Pipeline
 
-**Target thresholds (guidelines):**
-- At-risk recall: ≥ 0.80 (catch at least 80% of at-risk students)
-- At-risk F1: ≥ 0.70
-- Pass/fail recall: ≥ 0.85
+### Why FAIL Recall Matters
 
-## Class Imbalance Handling
+In academic intervention systems, missing a failing student (false negative) is worse than a false alarm. The selected model catches **24 of 26** actual FAIL students in the test set (92.31% recall).
 
-At-risk and pass/fail datasets are typically imbalanced (minority class = at-risk or failing students).
+### Class Distribution
 
-### Training Strategy
+- PASS: 265 (67.09%)
+- FAIL: 130 (32.91%)
 
-```python
-# Planned approach in train_risk.py and train_pass_fail.py
-from sklearn.ensemble import RandomForestClassifier
+## Model 3 — At-Risk Detection (Rule Engine)
 
-model = RandomForestClassifier(
-    class_weight="balanced",  # auto-adjust weights inversely proportional to class frequency
-    random_state=42,
-)
-```
+Model 3 is **not** an ML classifier and has no formal ML metrics. It is a transparent heuristic risk engine.
 
-### Evaluation Strategy
+### Distribution on Full Dataset (395 students)
 
-- Report **precision-recall curve** alongside ROC curve
-- Report per-class precision, recall, and F1 (not just aggregate)
-- Never report accuracy as the primary metric for imbalanced models
-- Document class distribution in the metrics JSON file
+| Level | Count | % |
+|-------|-------|---|
+| LOW | 165 | 41.77% |
+| MEDIUM | 151 | 38.23% |
+| HIGH | 79 | 20.00% |
 
-## Model Versioning
+### Validation
 
-Models must never be silently overwritten. Each training run produces a new versioned artifact.
+- G3 leakage test passed (risk output unchanged when G3 varies)
+- Config JSON weights/thresholds verified on reload
 
-### Directory Structure
+## Caveats
 
-```
-ml/models/
-├── performance_v1.pkl
-├── performance_v1_metrics.json
-├── risk_v1.pkl
-├── risk_v1_metrics.json
-├── pass_fail_v1.pkl
-└── pass_fail_v1_metrics.json
-```
+- **395 students** is a small dataset — test metrics are not production guarantees.
+- **UCI domain** may not match institutional ERP data.
+- **Model 3 weights** are heuristic, not ML-optimized.
 
-### Metrics JSON Schema
-
-```json
-{
-  "model": "risk",
-  "version": 1,
-  "trained_at": "2026-04-15T10:30:00Z",
-  "dataset_hash": "sha256:abc123...",
-  "train_size": 1600,
-  "test_size": 400,
-  "metrics": {
-    "recall": 0.83,
-    "f1": 0.74,
-    "precision": 0.67,
-    "auc_roc": 0.89
-  },
-  "class_distribution": {
-    "low": 0.65,
-    "medium": 0.20,
-    "high": 0.15
-  },
-  "hyperparameters": {
-    "class_weight": "balanced",
-    "n_estimators": 100
-  }
-}
-```
-
-### Versioning Rules
-
-- Increment version on every retrain: `risk_v1.pkl` → `risk_v2.pkl`
-- Never delete old versions until the new version is validated and deployed
-- Backend reads active version from environment: `RISK_MODEL_VERSION=1`
-- Document which version is active in `ml/models/ACTIVE_VERSIONS.json`
-
-## Explainability (SHAP)
-
-For at-risk and pass/fail predictions, the system must explain **why** a student was flagged. This is required for:
-- Faculty trust and appropriate intervention
-- Parent communication
-- Project defense / viva
-
-### Approach
-
-- Use **SHAP** (SHapley Additive exPlanations) via the `shap` library
-- Compute SHAP values at inference time for each prediction
-- Return top-3 contributing features in the API response
-
-### API Response Format (planned)
-
-```json
-{
-  "student_id": "uuid",
-  "risk_level": "high",
-  "risk_probability": 0.87,
-  "top_factors": [
-    { "feature": "attendance_percentage", "impact": -0.31, "value": 62.0 },
-    { "feature": "internal_marks_avg", "impact": -0.22, "value": 45.0 },
-    { "feature": "backlogs", "impact": -0.18, "value": 2 }
-  ]
-}
-```
-
-Negative impact = pushes toward at-risk. Positive impact = pushes toward safe.
-
-### SHAP Install (future)
+## Running Tests
 
 ```bash
-cd ml && uv add shap
-cd backend && uv add shap
+cd ml && uv sync && uv run pytest
 ```
+
+## Future: Explainability
+
+SHAP explainability for classification models is a future enhancement when FastAPI integration is implemented. Model 3 already provides human-readable `risk_indicators`.
 
 ## Related Documentation
 
 - [ML Pipeline](ml-pipeline.md)
 - [Dataset](dataset.md)
+- [Model Evaluation (ml/)](../ml/docs/model_evaluation.md)
 - [Development Phases](development-phases.md)
-- [Reports](reports.md) (SHAP factors included in at-risk PDF reports)

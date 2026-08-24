@@ -29,10 +29,10 @@ htmlcov/
 .env.local
 .env.*.local
 
-# ML artifacts
-ml/models/*.pkl
+# ML artifacts (allow committed models under ml/models/model_*)
 backend/app/ml/models/*.pkl
-*.pkl
+# Ignore stray pkl files outside committed model paths
+/*.pkl
 
 # Jupyter
 .ipynb_checkpoints/

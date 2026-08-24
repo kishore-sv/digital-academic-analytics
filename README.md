@@ -57,7 +57,7 @@ Each institution operates as an independent tenant with backend-enforced data is
 | **Client** | Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query, react-hook-form, zod, Bun |
 | **Backend** | FastAPI, Python, SQLAlchemy, Alembic, argon2-cffi, PyJWT, slowapi, WeasyPrint, uv |
 | **Database** | PostgreSQL (Alembic migrations) |
-| **ML** | Pandas, NumPy, Scikit-learn, SHAP, versioned Pickle (.pkl) |
+| **ML** | Pandas, NumPy, Scikit-learn, joblib, Jupyter (uv) |
 | **CI** | GitHub Actions (pytest, ruff, eslint, build) |
 | **Infrastructure** | Docker Compose (PostgreSQL), Sentry (optional) |
 
@@ -77,15 +77,15 @@ digital-academic-analytics/
 ## ML Pipeline
 
 ```
-Dataset → Cleaning → EDA → Feature Engineering → Training → Evaluation → Pickle Model → FastAPI Inference → Dashboard
+UCI student-mat.csv → Training (notebooks) → .pkl / .json artifacts → Python inference → FastAPI (planned)
 ```
 
-Three planned models:
-1. **Performance Prediction** — predicted marks, grade, performance category
-2. **At-Risk Detection** — low/medium/high risk with probability
-3. **Pass/Fail Prediction** — pass/fail outcome with probability
+Three components (trained on UCI Student Performance Dataset):
+1. **Performance Prediction** — predicted final grade (G3) via HistGradientBoosting regression
+2. **Pass/Fail Prediction** — PASS/FAIL classification via Logistic Regression
+3. **At-Risk Detection** — rule-based risk scoring (not ML)
 
-Models are not yet trained. See [docs/ml-pipeline.md](docs/ml-pipeline.md).
+See [docs/ml-pipeline.md](docs/ml-pipeline.md) and [ml/README.md](ml/README.md).
 
 ## Development Phases
 
