@@ -1,0 +1,41 @@
+{
+    "model_name": "Weighted Risk Scoring Engine",
+    "model_type": "rule_based_risk_engine",
+    "dataset_records": 77050,
+    "thresholds": {
+        "LOW": 22.0,
+        "HIGH": 38.0
+    },
+    "metrics": {
+        "accuracy": 0.7485139519792343,
+        "macro_precision": 0.7261991230558729,
+        "macro_recall": 0.6922799127357285,
+        "macro_f1": 0.7077553919404842,
+        "high_risk_precision": 0.7802618328298087,
+        "high_risk_recall": 0.6711711711711712,
+        "high_risk_f1": 0.7216168389680544
+    },
+    "confusion_matrix": [
+        [
+            41097,
+            7448,
+            48
+        ],
+        [
+            8940,
+            12702,
+            1043
+        ],
+        [
+            91,
+            1807,
+            3874
+        ]
+    ],
+    "class_order": [
+        "LOW",
+        "MEDIUM",
+        "HIGH"
+    ],
+    "evaluation_note": "Evaluation performed against the independently generated risk reference labels in the synthetic dataset."
+}

@@ -1,0 +1,29 @@
+{
+    "model_name": "Model 1 - End-Term Mark Prediction",
+    "problem_type": "Regression",
+    "selected_algorithm": "HistGradientBoostingRegressor",
+    "dataset": "model1_regression_dataset.csv",
+    "train_samples": 215746,
+    "test_samples": 53937,
+    "features": [
+        "CA_mark",
+        "MID_mark",
+        "attendance_percentage",
+        "study_hours_per_week",
+        "assignment_completion_pct",
+        "previous_sgpa",
+        "previous_cgpa",
+        "backlog_count",
+        "course_credits",
+        "course_type",
+        "branch",
+        "semester"
+    ],
+    "target": "TARGET_END_MARKS",
+    "metrics": {
+        "MAE": 5.631208308353403,
+        "RMSE": 7.071165463379671,
+        "R2": 0.7635994683851461
+    },
+    "random_state": 42
+}

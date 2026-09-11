@@ -1,0 +1,20 @@
+{
+    "model_name": "HistGradientBoosting Classifier",
+    "task": "Pass/Fail Prediction",
+    "accuracy": 0.9533134912076378,
+    "fail_precision": 0.16142448661294515,
+    "fail_recall": 0.9672897196261683,
+    "fail_f1": 0.27667631989307195,
+    "roc_auc": 0.9905770891617115,
+    "confusion_matrix": [
+        [
+            621,
+            21
+        ],
+        [
+            3226,
+            65681
+        ]
+    ],
+    "selected_reason": "Highest FAIL Recall and highest ROC-AUC among the three evaluated models."
+}

@@ -1,0 +1,86 @@
+{
+    "model_name": "Weighted Risk Scoring Engine",
+    "model_type": "rule_based_risk_engine",
+    "description": "Weighted rule-based engine for student academic risk detection",
+    "risk_score_range": [
+        0,
+        100
+    ],
+    "feature_weights": {
+        "attendance_percentage": 0.2,
+        "previous_cgpa": 0.2,
+        "backlog_count": 0.2,
+        "current_failed_courses": 0.15,
+        "low_performance_course_count": 0.1,
+        "study_hours_per_week": 0.05,
+        "assignment_completion_percentage": 0.05,
+        "performance_trend": 0.05
+    },
+    "scoring_rules": {
+        "attendance_percentage": {
+            "<60": 1.0,
+            "60-74.99": 0.7,
+            "75-84.99": 0.3,
+            "85+": 0.0
+        },
+        "previous_cgpa": {
+            "missing": 0.5,
+            "<5": 1.0,
+            "5-5.99": 0.75,
+            "6-6.99": 0.45,
+            "7-7.99": 0.2,
+            "8+": 0.0
+        },
+        "backlog_count": {
+            "0": 0.0,
+            "1": 0.3,
+            "2": 0.6,
+            "3": 0.8,
+            "4+": 1.0
+        },
+        "current_failed_courses": {
+            "0": 0.0,
+            "1": 0.5,
+            "2": 0.75,
+            "3+": 1.0
+        },
+        "low_performance_course_count": {
+            "0": 0.0,
+            "1": 0.25,
+            "2": 0.5,
+            "3": 0.75,
+            "4+": 1.0
+        },
+        "study_hours_per_week": {
+            "<10": 1.0,
+            "10-14.99": 0.6,
+            "15-19.99": 0.3,
+            "20+": 0.0
+        },
+        "assignment_completion_percentage": {
+            "<50": 1.0,
+            "50-69.99": 0.6,
+            "70-84.99": 0.3,
+            "85+": 0.0
+        },
+        "performance_trend": {
+            "DECLINING": 1.0,
+            "STABLE": 0.3,
+            "IMPROVING": 0.0
+        }
+    },
+    "risk_thresholds": {
+        "LOW": {
+            "min": 0,
+            "max": 22
+        },
+        "MEDIUM": {
+            "min": 22,
+            "max": 38
+        },
+        "HIGH": {
+            "min": 38,
+            "max": 100
+        }
+    }
+}
