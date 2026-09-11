@@ -1,14 +1,6 @@
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/lib/constants";
 
 export default function AdminSubjectsPage() {
-  return (
-    <PlaceholderPage
-      title="Subjects"
-      breadcrumbs={[
-        { label: "Admin", href: "/admin/dashboard" },
-        { label: "Subjects" },
-      ]}
-      description="Manage subjects and courses"
-    />
-  );
+  redirect(ROUTES.admin.courses);
 }

@@ -2,7 +2,7 @@
 
 This document records the chosen security stack and policies. It extends [authentication.md](authentication.md) with concrete library choices and implementation rules.
 
-**Security has not been implemented yet.** This document is the implementation specification.
+**Status: implemented.** Auth, rate limiting, and tenant isolation are live in `backend/app/`.
 
 ## Technology Choices
 
@@ -44,11 +44,9 @@ sequenceDiagram
 - Rehash on login if argon2 parameters have been upgraded
 
 ```python
-# Planned usage (not yet implemented)
-from argon2 import PasswordHasher
-ph = PasswordHasher()
-password_hash = ph.hash(plain_password)
-ph.verify(password_hash, plain_password)  # raises on mismatch
+from app.core.security import hash_password, verify_password
+password_hash = hash_password(plain_password)
+verify_password(password_hash, plain_password)
 ```
 
 ## JWT Token Strategy
@@ -103,7 +101,7 @@ Exceeded limits return `429 Too Many Requests` with `Retry-After` header.
 
 Not in v1 scope. All non-admin accounts are created by the Institution Admin, who verifies identity out-of-band. Email verification may be added in a future version.
 
-## Auth Endpoints (planned)
+## Auth Endpoints
 
 | Method | Path | Auth required | Rate limited |
 |--------|------|--------------|-------------|

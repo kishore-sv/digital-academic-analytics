@@ -1,23 +1,26 @@
-export type UserRole = "admin" | "student" | "faculty" | "parent";
+export type UserRole =
+  | "institution_admin"
+  | "student"
+  | "faculty"
+  | "parent";
 
 export interface AuthUser {
   id: string;
+  email: string | null;
   role: UserRole;
-  institutionId: string;
-  name: string;
-  email?: string;
-  rollNumber?: string;
+  institution_id: string;
+  name?: string | null;
 }
 
 export interface LoginCredentials {
-  role: UserRole;
   identifier: string;
   password: string;
+  role: UserRole;
 }
 
 export interface SignupCredentials {
   name: string;
   email: string;
   password: string;
-  institutionName: string;
+  institution_name: string;
 }

@@ -6,7 +6,7 @@
 
 Alembic must be initialized **before the first SQLAlchemy model is written**. Retrofitting migrations after models exist is painful and error-prone.
 
-## Directory Layout (planned)
+## Directory Layout
 
 ```
 backend/

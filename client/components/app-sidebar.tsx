@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import {
   Sidebar,
@@ -16,6 +17,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { IconInnerShadowTop } from "@tabler/icons-react";
+import { PortalUserMenu } from "@/components/layout/portal-user-menu";
 
 export interface NavItem {
   title: string;
@@ -29,7 +31,15 @@ interface AppSidebarProps {
   homeHref: string;
 }
 
+function isNavItemActive(pathname: string, href: string) {
+  if (pathname === href) return true;
+  if (href.endsWith("/dashboard")) return false;
+  return pathname.startsWith(`${href}/`);
+}
+
 export function AppSidebar({ navItems, roleLabel, homeHref }: AppSidebarProps) {
+  const pathname = usePathname();
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -58,6 +68,7 @@ export function AppSidebar({ navItems, roleLabel, homeHref }: AppSidebarProps) {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     tooltip={item.title}
+                    isActive={isNavItemActive(pathname, item.href)}
                     render={<Link href={item.href} />}
                   >
                     <item.icon />
@@ -69,7 +80,9 @@ export function AppSidebar({ navItems, roleLabel, homeHref }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter />
+      <SidebarFooter>
+        <PortalUserMenu variant="sidebar" />
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

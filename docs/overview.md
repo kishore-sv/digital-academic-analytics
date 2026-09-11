@@ -49,11 +49,14 @@ The following are **not** part of the current implementation scope:
 
 The project uses a **monolithic software architecture**: Next.js frontend + FastAPI backend + PostgreSQL + separate ML development directory.
 
-## Immediate Next Steps (Phase 0)
+## Getting Started
 
-1. Generate synthetic dataset → `ml/datasets/raw/synthetic_academic_data.csv` ([dataset.md](dataset.md))
-2. Init Alembic in `backend/` before writing any SQLAlchemy model ([migrations.md](migrations.md))
-3. Install TanStack Query + react-hook-form + zod on client ([frontend-stack.md](frontend-stack.md))
+1. `docker compose up -d` — start PostgreSQL
+2. `cd backend && uv run alembic upgrade head && uv run python scripts/reseed.py`
+3. `uv run uvicorn app.main:app --reload` — API on port 8000
+4. `cd client && bun run dev` — frontend on port 3000
+
+See [e2e-testing.md](e2e-testing.md) and [deployment.md](deployment.md).
 
 ## Related Documentation
 

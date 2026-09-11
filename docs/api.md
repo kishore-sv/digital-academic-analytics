@@ -1,91 +1,61 @@
 # API Reference
 
-## Overview
+Base URL: `http://localhost:8000/api/v1`
 
-The FastAPI backend exposes a REST API. **Endpoints have not been implemented yet.** This document lists the planned API categories.
+## Authentication
 
-Base URL: `http://localhost:8000/api`
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/auth/signup` | Institution admin signup |
+| POST | `/auth/login` | Role-based login |
+| POST | `/auth/logout` | Clear session cookies |
+| GET | `/auth/me` | Current user info |
 
-For pagination, error formats, and response envelopes, see [api-conventions.md](api-conventions.md).
+Roles: `institution_admin`, `student`, `faculty`, `parent`
 
-## Planned API Categories
+## Predictions
 
-### Authentication
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/predictions/performance` | End-term mark prediction |
+| POST | `/predictions/pass-fail` | Pass/fail prediction |
+| POST | `/predictions/risk` | Risk score and level |
+| POST | `/predictions/all` | Combined predictions |
+| POST | `/predictions/student` | Predictions from DB data (auth required) |
 
-| Method | Path | Description | Rate limited |
-|--------|------|-------------|-------------|
-| POST | `/api/auth/signup` | Admin signup + institution creation | Yes (3/min) |
-| POST | `/api/auth/login` | Role-based login | Yes (5/min) |
-| POST | `/api/auth/logout` | Clear session cookies | No |
-| POST | `/api/auth/refresh` | Refresh access token | Yes (10/min) |
-| GET | `/api/auth/me` | Current user info | No |
+## Analytics (institution_admin)
 
-### Users & Profiles
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/analytics/overview` | Institutional overview stats |
+| GET | `/analytics/departments` | Department-wise analytics |
+| GET | `/analytics/courses` | Course performance |
+| GET | `/analytics/performance-trends` | Semester trends |
+| GET | `/analytics/risk-distribution` | Risk level distribution |
+| GET | `/analytics/pass-fail` | Pass percentage |
 
-| Prefix | Description | Paginated |
-|--------|-------------|-----------|
-| `/api/students` | Student CRUD, profiles, academic info | Yes |
-| `/api/faculty` | Faculty CRUD, assigned students | Yes |
-| `/api/parents` | Parent CRUD, linked children | Yes |
+## Students
 
-### Academic Structure
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/students` | List students (admin) |
+| GET | `/students/{id}` | Student detail |
 
-| Prefix | Description | Paginated |
-|--------|-------------|-----------|
-| `/api/departments` | Department management | Yes |
-| `/api/subjects` | Subject management | Yes |
+## Goals
 
-### Academic Data
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/goals` | List student goals |
+| POST | `/goals` | Create goal |
 
-| Prefix | Description | Paginated |
-|--------|-------------|-----------|
-| `/api/attendance` | Attendance records | Yes |
-| `/api/examinations` | Examination management | Yes |
-| `/api/performance` | Performance marks and grades | Yes |
+## Reports
 
-### Analytics & Predictions
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/reports/institutional` | Institutional analytics report (HTML) |
 
-| Prefix | Description | Paginated |
-|--------|-------------|-----------|
-| `/api/analytics` | Institutional, department, subject analytics | Yes |
-| `/api/predictions` | ML performance predictions (with SHAP factors) | Yes |
-| `/api/at-risk` | At-risk student detection (with SHAP factors) | Yes |
+## Health
 
-### Goals & Reports
-
-| Prefix | Description | Paginated |
-|--------|-------------|-----------|
-| `/api/goals` | Student academic goals | Yes |
-| `/api/reports` | Academic reports (PDF download) | Yes |
-
-## Authentication Requirements
-
-All endpoints (except `/api/auth/login`, `/api/auth/signup`, and `/api/auth/refresh`) require a valid `access_token` httpOnly cookie. The backend validates:
-
-- User identity from JWT
-- User role for authorization
-- `institution_id` from JWT for tenant isolation
-
-## Pagination
-
-All list endpoints use offset-based pagination. Default `limit=20`, max `limit=100`.
-
-```
-GET /api/students?page=1&limit=20
-```
-
-Response envelope:
-```json
-{ "data": [...], "meta": { "page": 1, "limit": 20, "total": 247, "total_pages": 13 } }
-```
-
-See [api-conventions.md](api-conventions.md) for full specification.
-
-## Related Documentation
-
-- [API Conventions](api-conventions.md)
-- [Architecture](architecture.md)
-- [Authentication](authentication.md)
-- [Security](security.md)
-- [Authorization](authorization.md)
-- [Reports](reports.md)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check with model status |

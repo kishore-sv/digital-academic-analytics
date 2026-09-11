@@ -2,7 +2,7 @@
 
 Client-side libraries, patterns, and auth session handling for the Next.js application.
 
-**These libraries are not yet installed.** This document is the implementation specification.
+**Status: implemented.** Libraries are installed; see `client/app/providers.tsx`, `client/hooks/`, and `client/middleware.ts`.
 
 ## Required Libraries
 
@@ -34,7 +34,7 @@ shadcn/ui forms are designed to pair with react-hook-form for state and zod for 
 - Student goal-setting form
 - Admin user creation forms
 
-## Provider Setup (planned)
+## Provider Setup
 
 ```tsx
 // app/providers.tsx (future)
@@ -92,7 +92,7 @@ Next.js middleware (`middleware.ts`) checks for the `access_token` cookie and va
 
 Middleware runs on the Edge — it checks cookie presence only. Full role validation happens server-side on every API call.
 
-## Data Fetching Pattern (planned)
+## Data Fetching Pattern
 
 ```tsx
 // hooks/use-students.ts (future implementation)
@@ -107,7 +107,7 @@ export function useStudents(page = 1, limit = 20) {
 }
 ```
 
-## Form Pattern (planned)
+## Form Pattern
 
 ```tsx
 // Example: login form with zod validation (future)

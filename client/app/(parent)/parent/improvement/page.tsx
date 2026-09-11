@@ -1,14 +1,5 @@
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+"use client";
 
-export default function ParentImprovementPage() {
-  return (
-    <PlaceholderPage
-      title="Improvement Areas"
-      breadcrumbs={[
-        { label: "Parent", href: "/parent/dashboard" },
-        { label: "Improvement" },
-      ]}
-      description="Areas where your child can improve"
-    />
-  );
-}
+import StudentImprovementPage from "@/app/(student)/student/improvement/page";
+
+export default StudentImprovementPage;

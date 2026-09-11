@@ -1,14 +1,13 @@
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+"use client";
+
+import { Suspense } from "react";
+import { LoadingState } from "@/components/analytics/loading-state";
+import { AdminReportsContent } from "./reports-content";
 
 export default function AdminReportsPage() {
   return (
-    <PlaceholderPage
-      title="Reports"
-      breadcrumbs={[
-        { label: "Admin", href: "/admin/dashboard" },
-        { label: "Reports" },
-      ]}
-      description="Academic reports with alerts and trends"
-    />
+    <Suspense fallback={<LoadingState />}>
+      <AdminReportsContent />
+    </Suspense>
   );
 }

@@ -1,14 +1,13 @@
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+import { AccountProfileView } from "@/components/layout/account-profile-view";
+import { ROUTES } from "@/lib/constants";
 
 export default function StudentProfilePage() {
   return (
-    <PlaceholderPage
-      title="Profile"
+    <AccountProfileView
       breadcrumbs={[
-        { label: "Student", href: "/student/dashboard" },
+        { label: "Student", href: ROUTES.student.dashboard },
         { label: "Profile" },
       ]}
-      description="Your academic profile"
     />
   );
 }

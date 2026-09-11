@@ -77,7 +77,7 @@ digital-academic-analytics/
 ## ML Pipeline
 
 ```
-UCI student-mat.csv → Training (notebooks) → .pkl / .json artifacts → Python inference → FastAPI (planned)
+UCI student-mat.csv → Training (notebooks) → .pkl / .json artifacts → Python inference → FastAPI
 ```
 
 Three components (trained on UCI Student Performance Dataset):
@@ -99,14 +99,6 @@ See [docs/ml-pipeline.md](docs/ml-pipeline.md) and [ml/README.md](ml/README.md).
 8. Integration, testing and deployment
 
 See [docs/development-phases.md](docs/development-phases.md) for details.
-
-## Immediate Next Steps (Phase 0)
-
-Before building Phase 5 backend or Phase 6 dashboards:
-
-1. **Synthetic dataset** — `cd ml && uv run python src/generate_synthetic.py` → [docs/dataset.md](docs/dataset.md)
-2. **Alembic init** — `cd backend && uv add alembic && uv run alembic init alembic` → [docs/migrations.md](docs/migrations.md)
-3. **Client libraries** — `cd client && bun add @tanstack/react-query react-hook-form zod @hookform/resolvers` → [docs/frontend-stack.md](docs/frontend-stack.md)
 
 ## Local Development Setup
 
@@ -139,10 +131,14 @@ Client runs at `http://localhost:3000`.
 cd backend
 cp .env.example .env
 uv sync
+uv run alembic upgrade head
+uv run python scripts/reseed.py
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
 API runs at `http://localhost:8000`. Health check: `GET /health`.
+
+Default admin login: `admin@prj649.edu` / `admin123`
 
 ### 4. ML Development
 
@@ -166,10 +162,10 @@ uv sync
 
 | Document | Description |
 |----------|-------------|
-| [database.md](docs/database.md) | Planned database entities |
+| [database.md](docs/database.md) | Database entities and seed data |
 | [database-constraints.md](docs/database-constraints.md) | Indexes, uniqueness, audit fields |
 | [migrations.md](docs/migrations.md) | Alembic migration strategy |
-| [api.md](docs/api.md) | Planned API categories |
+| [api.md](docs/api.md) | API categories and endpoints |
 | [api-conventions.md](docs/api-conventions.md) | Pagination, errors, response envelopes |
 
 ### Auth & Security
@@ -188,7 +184,7 @@ uv sync
 
 | Document | Description |
 |----------|-------------|
-| [dataset.md](docs/dataset.md) | Dataset strategy (Phase 1 blocker) |
+| [dataset.md](docs/dataset.md) | Dataset strategy |
 | [ml-pipeline.md](docs/ml-pipeline.md) | ML pipeline and models |
 | [ml-evaluation.md](docs/ml-evaluation.md) | Metrics, versioning, SHAP explainability |
 
@@ -204,6 +200,8 @@ uv sync
 | Document | Description |
 |----------|-------------|
 | [infrastructure.md](docs/infrastructure.md) | Environments, secrets, Sentry, backup |
+| [deployment.md](docs/deployment.md) | Production deployment guide |
+| [e2e-testing.md](docs/e2e-testing.md) | Manual validation checklist |
 | [ci.md](docs/ci.md) | GitHub Actions CI pipeline |
 
 ## Scope Exclusions

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -19,11 +21,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { LoadingState } from "@/components/analytics/loading-state";
+import { useAuth } from "@/hooks/use-auth";
+import { loginSchema, type LoginFormValues } from "@/lib/auth-schemas";
 import { ROUTES } from "@/lib/constants";
-import type { UserRole } from "@/types/auth";
+
+const ROLE_ITEMS = [
+  { value: "institution_admin", label: "Institution Admin" },
+  { value: "student", label: "Student" },
+  { value: "faculty", label: "Faculty" },
+  { value: "parent", label: "Parent" },
+] as const;
 
 export function LoginForm() {
-  const [role, setRole] = useState<UserRole>("admin");
+  const { login, isLoggingIn } = useAuth();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      role: "institution_admin",
+      identifier: "",
+      password: "",
+    },
+  });
+
+  const role = useWatch({ control, name: "role" });
 
   return (
     <Card className="w-full max-w-sm">
@@ -34,63 +61,72 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(e) => e.preventDefault()}
-        >
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="role">Role</Label>
-            <Select
-              value={role}
-              onValueChange={(value) => setRole(value as UserRole)}
-            >
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Institution Admin</SelectItem>
-                <SelectItem value="student">Student</SelectItem>
-                <SelectItem value="faculty">Faculty</SelectItem>
-                <SelectItem value="parent">Parent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="identifier">
-              {role === "student" || role === "parent"
-                ? "Roll Number"
-                : "Email"}
-            </Label>
-            <Input
-              id="identifier"
-              type={role === "student" || role === "parent" ? "text" : "email"}
-              placeholder={
-                role === "student" || role === "parent"
-                  ? "20231CSE0260"
-                  : "admin@university.edu"
-              }
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required />
-          </div>
-          <Button type="submit" className="w-full">
-            Login
-          </Button>
-          {role === "admin" && (
-            <p className="text-center text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link
-                href={ROUTES.auth.signup}
-                className="underline underline-offset-4"
+        {isLoggingIn ? (
+          <LoadingState message="Signing in..." compact />
+        ) : (
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={handleSubmit((values) => login(values))}
+          >
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="role">Role</Label>
+              <Select
+                items={ROLE_ITEMS}
+                value={role}
+                onValueChange={(value) =>
+                  setValue("role", value as LoginFormValues["role"])
+                }
               >
-                Sign up
-              </Link>
-            </p>
-          )}
-        </form>
+                <SelectTrigger id="role">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="institution_admin">Institution Admin</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="faculty">Faculty</SelectItem>
+                  <SelectItem value="parent">Parent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="identifier">
+                {role === "student" ? "Roll Number" : "Email"}
+              </Label>
+              <Input
+                id="identifier"
+                type={role === "student" ? "text" : "email"}
+                placeholder={
+                  role === "student" ? "20240001" : "admin@demo.com"
+                }
+                {...register("identifier")}
+              />
+              {errors.identifier && (
+                <p className="text-sm text-destructive">{errors.identifier.message}</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password">Password</Label>
+              <PasswordInput id="password" {...register("password")} />
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password.message}</p>
+              )}
+            </div>
+            <Button type="submit" className="w-full">
+              Login
+            </Button>
+            {role === "institution_admin" && (
+              <p className="text-center text-sm text-muted-foreground">
+                Don&apos;t have an account?{" "}
+                <Link
+                  href={ROUTES.auth.signup}
+                  className="underline underline-offset-4"
+                >
+                  Sign up
+                </Link>
+              </p>
+            )}
+          </form>
+        )}
       </CardContent>
     </Card>
   );

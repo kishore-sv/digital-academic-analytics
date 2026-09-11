@@ -60,7 +60,7 @@ When institutional data becomes available, models should be retrained on mapped 
 
 ## Backend Seed Data (Future)
 
-A separate synthetic seed dataset for PostgreSQL local development is planned for Phase 5. The UCI dataset is used for ML training only.
+PostgreSQL development data is loaded via `backend/scripts/seed.py` (see `scripts/reseed.py` for a full reset). The UCI dataset is used for ML training only.
 
 ## Related Documentation
 

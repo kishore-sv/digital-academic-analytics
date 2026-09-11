@@ -100,7 +100,7 @@ For large institutions where on-read computation is too slow, an `attendance_sum
 - Recompute on every attendance record insert/update (write-through)
 - Or refresh materialized view on a schedule (e.g. nightly)
 
-For the capstone demo, **on-read computation is recommended** for simplicity.
+For v1, **on-read computation is recommended** for simplicity.
 
 ## Related Documentation
 

@@ -99,7 +99,7 @@ See [security.md](security.md) for full token specification and [frontend-stack.
 | `role` | admin, student, faculty, parent |
 | `institution_id` | Tenant UUID (always server-derived) |
 
-## Auth Endpoints (planned)
+## Auth Endpoints
 
 | Method | Path | Rate limited |
 |--------|------|-------------|

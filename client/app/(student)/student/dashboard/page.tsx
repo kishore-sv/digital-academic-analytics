@@ -1,14 +1,52 @@
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+"use client";
+
+import { RiskDistributionChart } from "@/components/analytics/risk-distribution-chart";
+import { StatCard } from "@/components/analytics/stat-card";
+import { PerformanceTrendChart } from "@/components/analytics/charts/performance-trend-chart";
+import { ChartShell } from "@/components/analytics/charts/chart-shell";
+import { PageHeader } from "@/components/layout/page-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  useScopedAnalyticsOverview,
+  useScopedRiskDistribution,
+  usePerformanceTrends,
+} from "@/hooks/use-analytics";
 
 export default function StudentDashboardPage() {
+  const { data } = useScopedAnalyticsOverview();
+  const { data: risk } = useScopedRiskDistribution();
+  const { data: trends } = usePerformanceTrends(undefined, true);
+
   return (
-    <PlaceholderPage
-      title="Student Dashboard"
-      breadcrumbs={[
-        { label: "Student", href: "/student/dashboard" },
-        { label: "Dashboard" },
-      ]}
-      description="Your academic overview"
-    />
+    <div className="space-y-6">
+      <PageHeader
+        title="My Dashboard"
+        description="Your academic performance and risk overview."
+      />
+      {data && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard title="CGPA" value={data.average_cgpa.toFixed(2)} />
+          <StatCard title="SGPA" value={data.average_sgpa.toFixed(2)} />
+          <StatCard title="Pass %" value={`${data.pass_percentage}%`} />
+          <StatCard title="Risk Level" value={`${data.at_risk_percentage}% at-risk`} />
+        </div>
+      )}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle className="text-base">CGPA / SGPA Progression</CardTitle></CardHeader>
+          <CardContent>
+            <ChartShell isEmpty={!trends?.length}>
+              {trends && <PerformanceTrendChart data={trends} />}
+            </ChartShell>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base">Academic Risk</CardTitle></CardHeader>
+          <CardContent>
+            {risk && <RiskDistributionChart data={risk} />}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
