@@ -27,7 +27,9 @@ function formatApiDetail(detail: unknown): string {
         if (item && typeof item === "object" && "msg" in item) {
           const loc =
             "loc" in item && Array.isArray(item.loc)
-              ? item.loc.filter((part) => part !== "body").join(" → ")
+              ? item.loc
+                  .filter((part: string | number) => part !== "body")
+                  .join(" → ")
               : "";
           const msg = String((item as { msg: string }).msg);
           return loc ? `${loc}: ${msg}` : msg;
