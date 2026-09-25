@@ -1,0 +1,59 @@
+{% extends "main.html" %}
+
+{% block tabs %}
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+  <section class="landing">
+    <header class="landing-hero">
+      <p class="landing-eyebrow">PRJ_649 · Backend</p>
+      <h1 class="landing-title">Academic analytics API</h1>
+      <p class="landing-lead">
+        FastAPI service for student records, marks, attendance, analytics, and ML predictions.
+        One institution per tenant; routes live under <code>/api/v1</code>.
+      </p>
+      <div class="landing-cta">
+        <a href="{{ 'redoc.html' | url }}" class="landing-btn landing-btn--primary">
+          Open API reference
+        </a>
+        <a href="{{ 'api-guide/' | url }}" class="landing-btn landing-btn--ghost">
+          How to run locally
+        </a>
+      </div>
+    </header>
+
+    <div class="landing-grid">
+      <article class="landing-card">
+        <h2>ReDoc</h2>
+        <p>Every path, query param, and JSON body—generated from the OpenAPI schema.</p>
+        <a href="{{ 'redoc.html' | url }}">Browse endpoints →</a>
+      </article>
+      <article class="landing-card">
+        <h2>Markdown reference</h2>
+        <p>Tables for request and response fields, grouped by tag (auth, students, marks, …).</p>
+        <a href="{{ 'api-reference/' | url }}">Read the reference →</a>
+      </article>
+      <article class="landing-card">
+        <h2>Code layout</h2>
+        <p>Where routes, services, models, and migrations sit in <code>backend/</code>.</p>
+        <a href="{{ 'structure/' | url }}">See folder map →</a>
+      </article>
+    </div>
+
+    <aside class="landing-note">
+      <p>
+        <strong>Try requests?</strong>
+        Run <code>uvicorn</code> locally and use
+        <a href="http://localhost:8000/docs" target="_blank" rel="noopener">Swagger</a>
+        after <code>POST /api/v1/auth/login</code>. This site is static documentation only.
+      </p>
+    </aside>
+  </section>
+
+  {% if page.content %}
+    <div class="landing-extra md-typeset">
+      {{ page.content }}
+    </div>
+  {% endif %}
+{% endblock %}

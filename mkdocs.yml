@@ -10,6 +10,7 @@ docs_dir: docs/backend
 
 theme:
   name: material
+  custom_dir: docs/backend/overrides
   palette:
     - scheme: default
       primary: indigo
@@ -22,13 +23,22 @@ theme:
         icon: material/brightness-4
         name: Light mode
   features:
+    - navigation.tabs
+    - navigation.top
     - navigation.sections
-    - navigation.expand
     - content.code.copy
     - search.suggest
 
 plugins:
   - search
+
+extra_css:
+  - stylesheets/home.css
+
+extra:
+  generator: false
+
+copyright: Guide · Nayeem Akhtar Sholapur
 
 markdown_extensions:
   - pymdownx.snippets:
@@ -40,16 +50,20 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Interactive API (ReDoc): redoc.md
-  - Guide: api-guide.md
-  - Folder structure: structure.md
-  - API reference (generated): api-reference.md
-  - Short index: api-index.md
-  - Conventions: conventions.md
-  - Authentication: authentication.md
-  - Authorization: authorization.md
-  - Multi-tenancy: multi-tenancy.md
-  - Security: security.md
-  - Database: database.md
-  - Migrations: migrations.md
-  - User roles: user-roles.md
+  - API:
+      - ReDoc: redoc.md
+      - Endpoints: api-reference.md
+      - Short index: api-index.md
+  - Develop:
+      - Guide: api-guide.md
+      - Folder structure: structure.md
+      - Conventions: conventions.md
+  - Security:
+      - Authentication: authentication.md
+      - Authorization: authorization.md
+      - Multi-tenancy: multi-tenancy.md
+      - Security: security.md
+      - User roles: user-roles.md
+  - Data:
+      - Database: database.md
+      - Migrations: migrations.md
