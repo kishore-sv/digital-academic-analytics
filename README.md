@@ -102,6 +102,8 @@ See [docs/development-phases.md](docs/development-phases.md) for details.
 
 ## Local Development Setup
 
+**Automated (macOS, Linux, Windows):** from the repo root run `python setup.py` (or `setup.bat` / `./setup.sh`). Use `python setup.py --start` to also launch the API and client. See [setup.md](setup.md).
+
 ### Prerequisites
 
 - [Bun](https://bun.sh) (client)
