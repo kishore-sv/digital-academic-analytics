@@ -2,8 +2,11 @@
 
 from contextlib import asynccontextmanager
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -13,6 +16,7 @@ from app.core.brand import API_TITLE
 from app.core.config import settings
 from app.core.limiter import limiter
 from app.ml.model_loader import model_loader
+from app.ml_demo.routes import router as ml_demo_router
 from app.openapi_meta import OPENAPI_DESCRIPTION, OPENAPI_TAGS
 
 if settings.SENTRY_DSN:
@@ -53,6 +57,14 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.API_PREFIX)
+
+_BACKEND_ROOT = Path(__file__).resolve().parents[1]
+app.mount(
+    "/static/ml_demo",
+    StaticFiles(directory=_BACKEND_ROOT / "static" / "ml_demo"),
+    name="ml_demo_static",
+)
+app.include_router(ml_demo_router)
 
 
 @app.get("/", tags=["meta"])

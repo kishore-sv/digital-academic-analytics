@@ -1,0 +1,46 @@
+{% macro render_algorithm_comparison(comp) %}
+{% if comp and comp.candidates %}
+<section class="algo-compare" aria-labelledby="algo-compare-heading">
+  <h3 id="algo-compare-heading">{{ comp.title }}</h3>
+  <div class="compare-table-wrap">
+    <table class="data compare-table">
+      <thead>
+        <tr>
+          <th scope="col">Algorithm</th>
+          {% for label in comp.metric_labels %}
+          <th scope="col">{{ label }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in comp.candidates %}
+        <tr class="{% if row.selected %}compare-selected{% endif %}">
+          <td>
+            {{ row.algorithm }}
+            {% if row.selected %}<span class="compare-badge">Deployed</span>{% endif %}
+          </td>
+          {% for label in comp.metric_labels %}
+          {% set key = 'R2' if label == 'R²' else label %}
+          {% set val = row.metrics[key] %}
+          <td>
+            {% if label in ['Accuracy', 'FAIL precision', 'FAIL recall'] %}
+              {{ (val * 100) | round(2) }}%
+            {% elif label in ['MAE', 'RMSE'] %}
+              {{ val | round(3) }}
+            {% elif label == 'R²' %}
+              {{ val | round(3) }}
+            {% else %}
+              {{ val | round(4) }}
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="compare-rationale"><strong>Why we chose this approach:</strong> {{ comp.why_chosen }}</p>
+  <p class="compare-rationale"><strong>Why this is useful in the project:</strong> {{ comp.why_useful }}</p>
+</section>
+{% endif %}
+{% endmacro %}

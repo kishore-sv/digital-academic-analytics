@@ -1,0 +1,25 @@
+/* Simple syntax colors for training code viewer */
+.code-block pre {
+  background: #1e293b;
+}
+
+.code-block code .hl-kw {
+  color: #c4b5fd;
+}
+
+.code-block code .hl-str {
+  color: #86efac;
+}
+
+.code-block code .hl-cmt {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.code-block code .hl-num {
+  color: #fdba74;
+}
+
+.code-block code .hl-key {
+  color: #fca5a5;
+}

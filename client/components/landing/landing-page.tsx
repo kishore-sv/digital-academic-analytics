@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LandingShowcase } from "@/components/landing/landing-showcase";
 import { buttonVariants } from "@/components/ui/button";
 import { BRAND } from "@/lib/brand";
+import { getBackendOrigin } from "@/lib/api";
 import { ROUTES } from "@/lib/constants";
 import { LANDING_SHOWCASES } from "@/lib/landing-showcases";
 import { cn } from "@/lib/utils";
@@ -158,6 +159,14 @@ export function LandingPage() {
             <Link href={ROUTES.architecture} className="hover:text-foreground">
               System architecture
             </Link>
+            <a
+              href={`${getBackendOrigin()}/ml-demo`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground"
+            >
+              ML Model Demo
+            </a>
             <Link href={ROUTES.auth.login} className="hover:text-foreground">
               Login
             </Link>

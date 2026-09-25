@@ -1,6 +1,14 @@
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
+/** Origin for backend-hosted pages (e.g. ML demo), without /api/v1. */
+export function getBackendOrigin(): string {
+  const explicit = process.env.NEXT_PUBLIC_BACKEND_ORIGIN?.replace(/\/$/, "");
+  if (explicit) return explicit;
+  const stripped = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+  return stripped || "http://localhost:8000";
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,

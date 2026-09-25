@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ file.name }} — Training code</title>
+  <link rel="stylesheet" href="/static/ml_demo/styles.css" />
+  <link rel="stylesheet" href="/static/ml_demo/code-highlight.css" />
+</head>
+<body class="code-viewer-page">
+  <header class="code-viewer-header">
+    <div class="code-viewer-title">
+      <h1>{{ file.name }}</h1>
+      <p class="muted">{{ file.relative }}</p>
+    </div>
+    <div class="code-viewer-actions">
+      <button type="button" class="btn" id="btn-fullscreen">Browser full screen</button>
+      <button type="button" class="btn" data-copy-target="code-main">Copy</button>
+      <a class="btn" href="{{ back_url }}">Back to demo</a>
+    </div>
+  </header>
+  <main class="code-viewer-main">
+    <pre id="code-main"><code data-lang="{{ code_lang }}">{{ file.content }}</code></pre>
+  </main>
+  <script src="/static/ml_demo/code-highlight.js"></script>
+  <script src="/static/ml_demo/demo.js"></script>
+  <script>
+    document.getElementById("btn-fullscreen")?.addEventListener("click", () => {
+      const el = document.documentElement;
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.();
+      } else {
+        el.requestFullscreen?.().catch(() => {});
+      }
+    });
+  </script>
+</body>
+</html>

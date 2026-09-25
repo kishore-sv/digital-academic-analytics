@@ -1,0 +1,356 @@
+{% from "ml_demo/_algorithm_comparison.html" import render_algorithm_comparison %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ML Model Demonstration</title>
+  <link rel="stylesheet" href="/static/ml_demo/styles.css" />
+  {% if view == 'code' %}
+  <link rel="stylesheet" href="/static/ml_demo/code-highlight.css" />
+  {% endif %}
+</head>
+<body>
+  <div class="wrap">
+    <header class="demo-header">
+      <h1>ML Model Demonstration</h1>
+      <p>Interactive demonstration of the academic performance prediction and at-risk detection models.</p>
+    </header>
+
+    {% if not models_loaded %}
+    <div class="alert alert-warn">
+      Model artifacts are not loaded. Ensure <code>model1_endterm_histgradientboosting.pkl</code>,
+      <code>model2_pass_fail_histgradientboosting.pkl</code>, and
+      <code>model3_risk_engine_config.json</code> exist in ML_MODELS_DIR.
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <nav class="tabs" aria-label="Models">
+      <a class="tab {% if tab == 'model1' %}active{% endif %}" href="/ml-demo?tab=model1">Performance Prediction</a>
+      <a class="tab {% if tab == 'model2' %}active{% endif %}" href="/ml-demo?tab=model2">Pass / Fail Prediction</a>
+      <a class="tab {% if tab == 'model3' %}active{% endif %}" href="/ml-demo?tab=model3">At-Risk Detection</a>
+    </nav>
+
+    {% if view == 'dataset' and dataset %}
+    <section class="card">
+      <h2>Dataset viewer</h2>
+      {% if not dataset.available %}
+      <p class="muted">{{ dataset.message }}</p>
+      <p class="muted">Expected path: <code>{{ dataset.dataset_dir }}/{{ dataset.expected_file }}</code></p>
+      {% if dataset.search_order %}
+      <p class="muted">Filenames tried: {% for f in dataset.search_order %}<code>{{ f }}</code>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+      {% endif %}
+      {% if dataset.model_note %}<p class="muted">{{ dataset.model_note }}</p>{% endif %}
+      {% if dataset.hint %}<p class="muted">{{ dataset.hint }}</p>{% endif %}
+      {% else %}
+      <p class="muted">Shared synthetic dataset for Models 1–3 (same simulation run).</p>
+      {% if dataset.model_note %}<p class="muted">{{ dataset.model_note }}</p>{% endif %}
+      <p class="muted"><strong>{{ dataset.path_display }}</strong> — {{ dataset.rows }} rows × {{ dataset.columns }} columns</p>
+      <p class="muted">Columns: {{ dataset.column_names | join(', ') }}</p>
+      <div style="overflow-x:auto">
+        <table class="data">
+          <thead>
+            <tr>{% for col in dataset.column_names %}<th>{{ col }}</th>{% endfor %}</tr>
+          </thead>
+          <tbody>
+            {% for row in dataset.records %}
+            <tr>{% for col in dataset.column_names %}<td>{{ row[col] }}</td>{% endfor %}</tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        {% if dataset.page > 1 %}
+        <a class="btn" href="/ml-demo?tab={{ tab }}&view=dataset&page={{ dataset.page - 1 }}">Previous</a>
+        {% endif %}
+        <span>Page {{ dataset.page }} of {{ dataset.total_pages }}</span>
+        {% if dataset.page < dataset.total_pages %}
+        <a class="btn" href="/ml-demo?tab={{ tab }}&view=dataset&page={{ dataset.page + 1 }}">Next</a>
+        {% endif %}
+      </div>
+      {% if dataset.numeric_summary %}
+      <h3>Numeric summary (sample of first 5,000 rows)</h3>
+      <table class="data">
+        <thead><tr><th>Column</th><th>Count</th><th>Mean</th><th>Min</th><th>Max</th></tr></thead>
+        <tbody>
+          {% for col, stats in dataset.numeric_summary.items() %}
+          <tr>
+            <td>{{ col }}</td><td>{{ stats.count }}</td><td>{{ stats.mean }}</td><td>{{ stats.min }}</td><td>{{ stats.max }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+      {% endif %}
+      <div class="link-row"><a class="btn" href="/ml-demo?tab={{ tab }}">Back to model</a></div>
+    </section>
+    {% endif %}
+
+    {% if view == 'code' and training_code %}
+    <section class="card">
+      <h2>Training / implementation code</h2>
+      {% if not training_code.available %}
+      <p class="muted">{{ training_code.message }}</p>
+      {% else %}
+      {% for file in training_code.files %}
+      {% set code_lang = 'json' if file.name.endswith('.json') else 'python' %}
+      <h3>{{ file.name }} <span class="muted">({{ file.relative }})</span></h3>
+      <div class="code-block" data-ml-tab="{{ tab }}">
+        <div class="code-block-actions">
+          <button
+            type="button"
+            class="btn code-action-btn"
+            data-open-code-full
+            data-ml-tab="{{ tab }}"
+            data-code-file="{{ loop.index }}"
+          >
+            Open full screen
+          </button>
+          <button type="button" class="btn code-action-btn" data-copy-target="code-{{ loop.index }}">Copy</button>
+        </div>
+        <pre id="code-{{ loop.index }}"><code data-lang="{{ code_lang }}">{{ file.content }}</code></pre>
+      </div>
+      {% endfor %}
+      {% endif %}
+      <div class="link-row"><a class="btn" href="/ml-demo?tab={{ tab }}">Back to model</a></div>
+    </section>
+    {% endif %}
+
+    {% if tab == 'model1' %}
+    {% set defaults = examples.model1['high'] %}
+    {% set v = form_values if form_values else defaults %}
+    <section class="card">
+      <span class="badge">ML Model</span>
+      <h2>Model 1 — End-Term Performance Prediction</h2>
+      <p class="muted">Predicts a student's expected end-term marks using academic performance, attendance, study behaviour, previous academic performance, and course information.</p>
+      <div class="meta-grid">
+        <div class="meta-item meta-item-wide">
+          <span class="meta-label">Algorithm</span>
+          <p class="meta-value">HistGradientBoostingRegressor</p>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Target</span>
+          <p class="meta-value meta-value-mono">TARGET_END_MARKS</p>
+        </div>
+        {% if metrics.model1 and metrics.model1.metrics %}
+        <div class="meta-item">
+          <span class="meta-label">MAE</span>
+          <p class="meta-value">{{ metrics.model1.metrics.MAE | round(3) }}</p>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">RMSE</span>
+          <p class="meta-value">{{ metrics.model1.metrics.RMSE | round(3) }}</p>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">R²</span>
+          <p class="meta-value">{{ metrics.model1.metrics.R2 | round(3) }}</p>
+        </div>
+        {% endif %}
+      </div>
+      {{ render_algorithm_comparison(algorithm_comparison) }}
+      <hr class="sep" />
+      <form method="post" action="/ml-demo/model1/predict">
+        <div class="form-grid">
+          <label class="field">CA mark<input name="CA_mark" type="number" step="any" value="{{ v.CA_mark }}" required /></label>
+          <label class="field">MID mark<input name="MID_mark" type="number" step="any" value="{{ v.MID_mark }}" required /></label>
+          <label class="field">Attendance %<input name="attendance_percentage" type="number" step="any" value="{{ v.attendance_percentage }}" required /></label>
+          <label class="field">Study hours/week<input name="study_hours_per_week" type="number" step="any" value="{{ v.study_hours_per_week }}" required /></label>
+          <label class="field">Assignment completion %<input name="assignment_completion_pct" type="number" step="any" value="{{ v.assignment_completion_pct }}" required /></label>
+          <label class="field">Previous SGPA<input name="previous_sgpa" type="number" step="any" value="{{ v.previous_sgpa }}" required /></label>
+          <label class="field">Previous CGPA<input name="previous_cgpa" type="number" step="any" value="{{ v.previous_cgpa }}" required /></label>
+          <label class="field">Backlog count<input name="backlog_count" type="number" value="{{ v.backlog_count }}" required /></label>
+          <label class="field">Course credits<input name="course_credits" type="number" value="{{ v.course_credits }}" required /></label>
+          <label class="field">Course type
+            <select name="course_type">{% for ct in course_types %}<option value="{{ ct }}" {% if v.course_type == ct %}selected{% endif %}>{{ ct }}</option>{% endfor %}</select>
+          </label>
+          <label class="field">Branch<input name="branch" type="text" value="{{ v.branch }}" required /></label>
+          <label class="field">Semester<input name="semester" type="number" min="1" max="8" value="{{ v.semester }}" required /></label>
+        </div>
+        <div class="actions">
+          <button type="submit" class="primary">Run Performance Prediction</button>
+          <a class="btn" href="/ml-demo?tab=model1&example=high">High prediction example</a>
+          <a class="btn" href="/ml-demo?tab=model1&example=low">Low prediction example</a>
+          <a class="btn" href="/ml-demo?tab=model1">Clear</a>
+        </div>
+      </form>
+      {% if result and result.predicted_end_marks is defined %}
+      <div class="result-card neutral">
+        <p class="muted">Prediction result</p>
+        <p class="result-value">{{ result.predicted_end_marks }}</p>
+        <p class="muted">Predicted end-term marks (0–100)</p>
+      </div>
+      {% endif %}
+      <div class="link-row">
+        <a class="btn" href="/ml-demo?tab=model1&view=dataset&page=1">View Dataset</a>
+        <a class="btn" href="/ml-demo?tab=model1&view=code">View Training Code</a>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if tab == 'model2' %}
+    {% set defaults = examples.model2['pass'] %}
+    {% set v = form_values if form_values else defaults %}
+    <section class="card">
+      <span class="badge">ML Model</span>
+      <h2>Model 2 — Pass / Fail Prediction</h2>
+      <p class="muted">Predicts whether a student is likely to pass or fail based on current academic performance, attendance, previous academic performance, and course information.</p>
+      <div class="meta-grid">
+        <div class="meta-item meta-item-wide">
+          <span class="meta-label">Algorithm</span>
+          <p class="meta-value">HistGradientBoostingClassifier</p>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Target</span>
+          <p class="meta-value meta-value-mono">TARGET_PASS_FAIL</p>
+        </div>
+        {% if metrics.model2 %}
+        <div class="meta-item">
+          <span class="meta-label">Accuracy</span>
+          <p class="meta-value">{{ (metrics.model2.accuracy * 100) | round(2) }}%</p>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">ROC-AUC</span>
+          <p class="meta-value">{{ metrics.model2.roc_auc | round(4) }}</p>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">FAIL precision</span>
+          <p class="meta-value">{{ (metrics.model2.fail_precision * 100) | round(2) }}%</p>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">FAIL recall</span>
+          <p class="meta-value">{{ (metrics.model2.fail_recall * 100) | round(2) }}%</p>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">FAIL F1</span>
+          <p class="meta-value">{{ metrics.model2.fail_f1 | round(4) }}</p>
+        </div>
+        {% endif %}
+      </div>
+      {{ render_algorithm_comparison(algorithm_comparison) }}
+      <hr class="sep" />
+      <form method="post" action="/ml-demo/model2/predict">
+        <div class="form-grid">
+          <label class="field">CA mark<input name="CA_mark" type="number" step="any" value="{{ v.CA_mark }}" required /></label>
+          <label class="field">MID mark<input name="MID_mark" type="number" step="any" value="{{ v.MID_mark }}" required /></label>
+          <label class="field">Attendance %<input name="attendance_percentage" type="number" step="any" value="{{ v.attendance_percentage }}" required /></label>
+          <label class="field">Study hours/week<input name="study_hours_per_week" type="number" step="any" value="{{ v.study_hours_per_week }}" required /></label>
+          <label class="field">Assignment completion %<input name="assignment_completion_pct" type="number" step="any" value="{{ v.assignment_completion_pct }}" required /></label>
+          <label class="field">Previous SGPA<input name="previous_sgpa" type="number" step="any" value="{{ v.previous_sgpa }}" required /></label>
+          <label class="field">Previous CGPA<input name="previous_cgpa" type="number" step="any" value="{{ v.previous_cgpa }}" required /></label>
+          <label class="field">Backlog count<input name="backlog_count" type="number" value="{{ v.backlog_count }}" required /></label>
+          <label class="field">Course credits<input name="course_credits" type="number" value="{{ v.course_credits }}" required /></label>
+          <label class="field">Branch<input name="branch" type="text" value="{{ v.branch }}" required /></label>
+          <label class="field">Semester<input name="semester" type="number" min="1" max="8" value="{{ v.semester }}" required /></label>
+        </div>
+        <div class="actions">
+          <button type="submit" class="primary">Run Pass/Fail Prediction</button>
+          <a class="btn" href="/ml-demo?tab=model2&example=pass">Pass example</a>
+          <a class="btn" href="/ml-demo?tab=model2&example=fail">Fail example</a>
+          <a class="btn" href="/ml-demo?tab=model2">Clear</a>
+        </div>
+      </form>
+      {% if result and result.prediction %}
+      <div class="result-card {% if result.prediction == 'PASS' %}pass{% else %}fail{% endif %}">
+        <p class="muted">Prediction</p>
+        <p class="result-value">{{ result.prediction }}</p>
+        <p>Pass probability: <strong>{{ (result.pass_probability * 100) | round(2) }}%</strong></p>
+        <p>Fail probability: <strong>{{ (result.fail_probability * 100) | round(2) }}%</strong></p>
+      </div>
+      {% endif %}
+      <div class="link-row">
+        <a class="btn" href="/ml-demo?tab=model2&view=dataset&page=1">View Dataset</a>
+        <a class="btn" href="/ml-demo?tab=model2&view=code">View Training Code</a>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if tab == 'model3' %}
+    {% set defaults = examples.model3['low'] %}
+    {% set v = form_values if form_values else defaults %}
+    <section class="card">
+      <span class="badge badge-rule">Rule-Based Risk Engine</span>
+      <h2>Model 3 — At-Risk Student Detection</h2>
+      <p class="muted">Calculates a weighted academic risk score using attendance, previous academic performance, backlogs, failed courses, low-performing courses, study behaviour, assignment completion, and performance trend. <strong>Not an ML model.</strong></p>
+      <div class="meta-grid">
+        <div class="meta-item meta-item-wide">
+          <span class="meta-label">Method</span>
+          <p class="meta-value">Weighted rule-based engine</p>
+        </div>
+        <div class="meta-item meta-item-wide">
+          <span class="meta-label">Config</span>
+          <p class="meta-value meta-value-mono">model3_risk_engine_config.json</p>
+        </div>
+        {% if metrics.model3 and metrics.model3.metrics %}
+        <div class="meta-item">
+          <span class="meta-label">Accuracy</span>
+          <p class="meta-value">{{ (metrics.model3.metrics.accuracy * 100) | round(2) }}%</p>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Macro F1</span>
+          <p class="meta-value">{{ metrics.model3.metrics.macro_f1 | round(4) }}</p>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">High-risk F1</span>
+          <p class="meta-value">{{ metrics.model3.metrics.high_risk_f1 | round(4) }}</p>
+        </div>
+        {% endif %}
+      </div>
+      {{ render_algorithm_comparison(algorithm_comparison) }}
+      <hr class="sep" />
+      <form method="post" action="/ml-demo/model3/predict">
+        <div class="form-grid">
+          <label class="field">Attendance %<input name="attendance_percentage" type="number" step="any" value="{{ v.attendance_percentage }}" required /></label>
+          <label class="field">Previous CGPA<input name="previous_cgpa" type="number" step="any" value="{{ v.previous_cgpa }}" required /></label>
+          <label class="field">Backlog count<input name="backlog_count" type="number" value="{{ v.backlog_count }}" required /></label>
+          <label class="field">Current failed courses<input name="current_failed_courses" type="number" value="{{ v.current_failed_courses }}" required /></label>
+          <label class="field">Low performance courses<input name="low_performance_course_count" type="number" value="{{ v.low_performance_course_count }}" required /></label>
+          <label class="field">Study hours/week<input name="study_hours_per_week" type="number" step="any" value="{{ v.study_hours_per_week }}" required /></label>
+          <label class="field">Assignment completion %<input name="assignment_completion_percentage" type="number" step="any" value="{{ v.assignment_completion_percentage }}" required /></label>
+          <label class="field">Performance trend
+            <select name="performance_trend">{% for t in trends %}<option value="{{ t }}" {% if v.performance_trend == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+          </label>
+        </div>
+        <div class="actions">
+          <button type="submit" class="primary">Calculate Risk</button>
+          <a class="btn" href="/ml-demo?tab=model3&example=low">Low risk example</a>
+          <a class="btn" href="/ml-demo?tab=model3&example=high">High risk example</a>
+          <a class="btn" href="/ml-demo?tab=model3">Clear</a>
+        </div>
+      </form>
+      {% if result and result.risk_score is defined %}
+      <div class="result-card neutral">
+        <p class="muted">Risk score</p>
+        <p class="result-value">{{ result.risk_score }} / 100</p>
+        <p>Risk level: <strong class="risk-{{ result.risk_level | lower }}">{{ result.risk_level }}</strong></p>
+      </div>
+      {% if result.contributions %}
+      <h3>Feature contributions (weighted)</h3>
+      <table class="data">
+        <thead><tr><th>Feature</th><th>Sub-score</th><th>Weight</th><th>Contribution</th></tr></thead>
+        <tbody>
+          {% for row in result.contributions %}
+          <tr>
+            <td>{{ row.feature }}</td><td>{{ row.sub_score }}</td><td>{{ row.weight }}</td><td>{{ row.weighted_contribution }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+      {% endif %}
+      <div class="link-row">
+        <a class="btn" href="/ml-demo?tab=model3&view=dataset&page=1">View Dataset</a>
+        <a class="btn" href="/ml-demo?tab=model3&view=code">View Training Code</a>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+  {% if view == 'code' %}
+  <script src="/static/ml_demo/code-highlight.js"></script>
+  {% endif %}
+  <script src="/static/ml_demo/demo.js"></script>
+</body>
+</html>
