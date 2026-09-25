@@ -1,4 +1,5 @@
 export const ROUTES = {
+  architecture: "/architecture",
   auth: {
     login: "/login",
     signup: "/signup",

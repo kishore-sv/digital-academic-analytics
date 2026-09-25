@@ -155,6 +155,9 @@ export function LandingPage() {
             © {year} {BRAND.name}. Team SMK · {BRAND.projectId}.
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link href={ROUTES.architecture} className="hover:text-foreground">
+              System architecture
+            </Link>
             <Link href={ROUTES.auth.login} className="hover:text-foreground">
               Login
             </Link>
