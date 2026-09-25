@@ -77,13 +77,38 @@ export function useDepartments(page = 1, limit = 50) {
   });
 }
 
+const MAX_API_PAGE_SIZE = 100;
+
 export function useCourses(page = 1, limit = 50) {
+  const safeLimit = Math.min(limit, MAX_API_PAGE_SIZE);
   return useQuery({
-    queryKey: ["courses", page, limit],
+    queryKey: ["courses", page, safeLimit],
     queryFn: () =>
       apiFetch<PaginatedResponse<Course>>(
-        `/courses?page=${page}&limit=${limit}`,
+        `/courses?page=${page}&limit=${safeLimit}`,
       ),
+  });
+}
+
+/** Fetches every course page (API max 100 per page). */
+export function useAllCourses() {
+  return useQuery({
+    queryKey: ["courses", "all"],
+    queryFn: async () => {
+      const limit = MAX_API_PAGE_SIZE;
+      let page = 1;
+      let totalPages = 1;
+      const all: Course[] = [];
+      do {
+        const res = await apiFetch<PaginatedResponse<Course>>(
+          `/courses?page=${page}&limit=${limit}`,
+        );
+        all.push(...res.data);
+        totalPages = res.meta.total_pages;
+        page += 1;
+      } while (page <= totalPages);
+      return all;
+    },
   });
 }
 

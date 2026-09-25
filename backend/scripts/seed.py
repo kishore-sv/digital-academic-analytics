@@ -160,31 +160,24 @@ def _create_course_enrollment(
 
 
 def _ensure_course_assessments(db, institution_id, course):
-    existing = (
-        db.query(Assessment)
-        .filter(Assessment.course_id == course.id)
-        .first()
-    )
-    if existing:
-        return
-    db.add_all(
-        [
+    from app.services.marks_entry_service import STANDARD_ASSESSMENTS
+
+    existing_types = {
+        a.assessment_type.upper()
+        for a in db.query(Assessment).filter(Assessment.course_id == course.id).all()
+    }
+    for name, atype, max_marks in STANDARD_ASSESSMENTS:
+        if atype in existing_types:
+            continue
+        db.add(
             Assessment(
                 institution_id=institution_id,
                 course_id=course.id,
-                name="Continuous Assessment",
-                assessment_type="CA",
-                max_marks=100,
-            ),
-            Assessment(
-                institution_id=institution_id,
-                course_id=course.id,
-                name="Mid-Term Exam",
-                assessment_type="MID",
-                max_marks=100,
-            ),
-        ]
-    )
+                name=name,
+                assessment_type=atype,
+                max_marks=max_marks,
+            )
+        )
     db.flush()
 
 

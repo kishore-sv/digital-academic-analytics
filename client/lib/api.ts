@@ -11,6 +11,26 @@ export class ApiError extends Error {
   }
 }
 
+function formatApiDetail(detail: unknown): string {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (item && typeof item === "object" && "msg" in item) {
+          const loc =
+            "loc" in item && Array.isArray(item.loc)
+              ? item.loc.filter((part) => part !== "body").join(" → ")
+              : "";
+          const msg = String((item as { msg: string }).msg);
+          return loc ? `${loc}: ${msg}` : msg;
+        }
+        return String(item);
+      })
+      .join("; ");
+  }
+  return "Request failed";
+}
+
 let refreshPromise: Promise<boolean> | null = null;
 
 async function tryRefreshSession(): Promise<boolean> {
@@ -57,9 +77,10 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
+    const detail = (body as { detail?: unknown }).detail;
     throw new ApiError(
       response.status,
-      (body as { detail?: string }).detail ?? response.statusText,
+      detail !== undefined ? formatApiDetail(detail) : response.statusText,
     );
   }
 

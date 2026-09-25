@@ -1,0 +1,65 @@
+name: Deploy backend docs (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/docs-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build MkDocs site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+      - name: Export OpenAPI and API reference
+        working-directory: backend
+        run: |
+          uv sync
+          uv run python scripts/generate_api_docs.py
+          uv run python scripts/export_openapi.py
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install MkDocs
+        run: pip install mkdocs-material
+
+      - name: Build site
+        env:
+          SITE_URL: https://${{ github.event.repository.owner }}.github.io/${{ github.event.repository.name }}/
+        run: |
+          mkdocs build -d site
+          cp docs/openapi.json site/openapi.json
+          cp docs/backend/redoc.html site/redoc.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

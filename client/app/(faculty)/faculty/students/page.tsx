@@ -17,6 +17,7 @@ export default function FacultyStudentsPage() {
       error={error}
       isEmpty={students.length === 0}
       emptyTitle="No assigned students"
+      showChildrenWhenEmpty={false}
     >
       <StudentTable
         students={students}

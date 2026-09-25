@@ -1,7 +1,7 @@
 [project]
 name = "prj649-backend"
 version = "0.1.0"
-description = "FastAPI backend for PRJ_649 Academic Analytics"
+description = "FastAPI backend for ScholarPulse"
 readme = "README.md"
 authors = [
     { name = "kishore-sv", email = "kishorbunni7@gmail.com" }

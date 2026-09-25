@@ -48,6 +48,38 @@ def get_linked_child_ids(db: Session, parent_id: uuid.UUID) -> list[uuid.UUID]:
     return [row[0] for row in rows]
 
 
+def get_marks_entry_student_scope(
+    db: Session,
+    user: User,
+    course_id: uuid.UUID,
+) -> list[uuid.UUID] | None:
+    """
+    Student IDs visible on the marks grid for a course.
+    None means all enrollments for the course; [] means none.
+    """
+    if user.role == "institution_admin":
+        return None
+
+    if user.role == "faculty":
+        faculty = _get_faculty_profile(db, user)
+        if not faculty:
+            return []
+        from app.services.marks_entry_service import get_assigned_course_ids
+
+        assigned_courses = get_assigned_course_ids(db, faculty.id)
+        if assigned_courses:
+            if course_id not in assigned_courses:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You are not assigned to this course",
+                )
+            return None
+        return get_assigned_student_ids(db, faculty.id)
+
+    accessible = get_accessible_student_ids(db, user)
+    return accessible
+
+
 def get_accessible_student_ids(db: Session, user: User) -> list[uuid.UUID] | None:
     """
     Return accessible student IDs for the user.

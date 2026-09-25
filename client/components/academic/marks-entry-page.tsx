@@ -12,6 +12,7 @@ import {
   useMarksGrid,
   useRegeneratePredictions,
 } from "@/hooks/use-academic-entry";
+import { showErrorToast } from "@/lib/toast";
 
 interface MarksEntryPageProps {
   title: string;
@@ -29,7 +30,7 @@ export function MarksEntryPage({
   const [draftFilters, setDraftFilters] = useState<MarksEntryFilters>({});
   const [appliedFilters, setAppliedFilters] = useState<MarksEntryFilters>({});
 
-  const { data: grid, isLoading, refetch } = useMarksGrid(
+  const { data: grid, isLoading, isError, error, refetch } = useMarksGrid(
     {
       course_id: appliedFilters.course_id,
       semester_id: appliedFilters.semester_id,
@@ -50,13 +51,26 @@ export function MarksEntryPage({
       <MarksEntryFiltersBar
         value={draftFilters}
         onChange={setDraftFilters}
-        onApply={() => setAppliedFilters({ ...draftFilters })}
+        onApply={() => {
+          if (!draftFilters.course_id) {
+            showErrorToast({
+              description: "Select a course / subject, then apply filters.",
+            });
+            return;
+          }
+          setAppliedFilters({ ...draftFilters });
+        }}
         onReset={() => {
           setDraftFilters({});
           setAppliedFilters({});
         }}
         showDepartment={showDepartmentFilter}
       />
+      {isError && (
+        <p className="text-sm text-destructive">
+          {error instanceof Error ? error.message : "Failed to load marks roster."}
+        </p>
+      )}
       <MarksEntryTable
         grid={grid}
         isLoading={isLoading}

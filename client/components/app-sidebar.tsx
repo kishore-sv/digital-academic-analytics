@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import { IconInnerShadowTop } from "@tabler/icons-react";
 import { PortalUserMenu } from "@/components/layout/portal-user-menu";
+import { BRAND } from "@/lib/brand";
 
 export interface NavItem {
   title: string;
@@ -50,7 +51,7 @@ export function AppSidebar({ navItems, roleLabel, homeHref }: AppSidebarProps) {
                 <IconInnerShadowTop className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">PRJ_649</span>
+                <span className="truncate font-medium">{BRAND.name}</span>
                 <span className="truncate text-xs text-muted-foreground">
                   {roleLabel}
                 </span>

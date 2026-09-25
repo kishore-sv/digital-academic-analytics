@@ -170,11 +170,11 @@ def get_marks_grid(
     section: str | None = Query(None),
     search: str | None = Query(None),
 ):
-    from app.services.authorization_service import get_accessible_student_ids
+    from app.services.authorization_service import get_marks_entry_student_scope
 
     course_uuid = parse_uuid(course_id, "course_id")
     get_entity_or_404(db, Course, course_uuid, current.institution_id)
-    accessible = get_accessible_student_ids(db, current.user)
+    accessible = get_marks_entry_student_scope(db, current.user, course_uuid)
 
     grid = build_marks_grid(
         db,

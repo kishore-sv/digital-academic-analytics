@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "@/app/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { BRAND, BRAND_PAGE_TITLE } from "@/lib/brand";
 
 const robotoHeading = Roboto({subsets:['latin'],variable:'--font-heading'});
 
@@ -20,9 +21,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PRJ_649 — Academic Analytics",
-  description:
-    "Digital Academic Performance Monitoring and Institutional Analytics System",
+  title: BRAND_PAGE_TITLE,
+  description: BRAND.tagline,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

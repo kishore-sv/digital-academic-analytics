@@ -1,6 +1,6 @@
 # ML Module
 
-Project: **PRJ_649** — Digital Academic Performance Monitoring and Institutional Analytics System
+Project: **ScholarPulse** — academic performance monitoring and institutional analytics
 
 ## Models
 

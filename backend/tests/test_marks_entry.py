@@ -122,6 +122,21 @@ class TestMarksEntry:
             body = response.json()
             assert "assessments" in body
             assert "students" in body
+            types = {a["assessment_type"] for a in body["assessments"]}
+            assert {"CA", "MID", "FINAL"}.issubset(types)
+        finally:
+            db.close()
+
+    def test_faculty_marks_grid_for_assigned_course(self, client):
+        _auth_client(client, FACULTY_EMAIL, FACULTY_PASSWORD, "faculty")
+        db = SessionLocal()
+        try:
+            enrollment = db.query(Enrollment).first()
+            response = client.get(
+                f"{API}/assessments/marks-grid?course_id={enrollment.course_id}",
+            )
+            assert response.status_code == 200
+            assert len(response.json()["students"]) >= 1
         finally:
             db.close()
 

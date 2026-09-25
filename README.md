@@ -1,4 +1,4 @@
-# PRJ_649 — Digital Academic Performance Monitoring and Institutional Analytics System
+# ScholarPulse — Academic Performance Monitoring & Institutional Analytics
 
 **Team:** SMK
 
@@ -136,7 +136,7 @@ uv run python scripts/reseed.py
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-API runs at `http://localhost:8000`. Health check: `GET /health`.
+API runs at `http://localhost:8000`. **Interactive API docs:** [Swagger UI](http://localhost:8000/docs) · [ReDoc](http://localhost:8000/redoc). Health: `GET /health`.
 
 Default admin login: `admin@prj649.edu` / `admin123`
 
@@ -165,7 +165,11 @@ uv sync
 | [database.md](docs/database.md) | Database entities and seed data |
 | [database-constraints.md](docs/database-constraints.md) | Indexes, uniqueness, audit fields |
 | [migrations.md](docs/migrations.md) | Alembic migration strategy |
-| [api.md](docs/api.md) | API categories and endpoints |
+| [backend-api.md](docs/backend-api.md) | Swagger/ReDoc UI, auth, generated reference |
+| [deployment.md](docs/deployment.md#backend-docs-on-github-pages) | Publish backend docs to **GitHub Pages** |
+| [backend-structure.md](docs/backend-structure.md) | `backend/` layout and route modules |
+| [api-reference.generated.md](docs/api-reference.generated.md) | Per-endpoint inputs/outputs (auto-generated) |
+| [api.md](docs/api.md) | API categories (short index) |
 | [api-conventions.md](docs/api-conventions.md) | Pagination, errors, response envelopes |
 
 ### Auth & Security
@@ -210,4 +214,4 @@ This project does **not** include: hardware/IoT, ESP32, RFID, sensors, GIS, bloc
 
 ## License
 
-Academic project — PRJ_649, SMK Team.
+Academic project — ScholarPulse, SMK Team.

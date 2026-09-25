@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiFetch } from "@/lib/api";
-import { useCourses, useDepartments, usePrograms } from "@/hooks/use-academic";
+import { useAllCourses, useDepartments, usePrograms } from "@/hooks/use-academic";
 
 export interface MarksEntryFilters {
   academic_year_id?: string;
@@ -78,8 +78,7 @@ export function MarksEntryFiltersBar({
     enabled: Boolean(yearId),
   });
 
-  const { data: coursesData } = useCourses(1, 200);
-  const allCourses = coursesData?.data ?? [];
+  const { data: allCourses = [], isError: coursesError } = useAllCourses();
 
   const filteredCourses = useMemo(() => {
     let list = allCourses;
@@ -248,6 +247,11 @@ export function MarksEntryFiltersBar({
           onChange={(e) => update({ search: e.target.value || undefined })}
         />
       </div>
+      {coursesError && (
+        <p className="text-sm text-destructive">
+          Could not load courses. Refresh the page or sign in again.
+        </p>
+      )}
       <div className="flex gap-2">
         <Button onClick={onApply}>Apply Filters</Button>
         <Button variant="outline" onClick={onReset}>Reset</Button>

@@ -13,6 +13,8 @@ interface DataListPageProps {
   isEmpty: boolean;
   emptyTitle: string;
   emptyDescription?: string;
+  /** When true (default), toolbar and actions stay visible even if the list is empty. */
+  showChildrenWhenEmpty?: boolean;
   children: React.ReactNode;
 }
 
@@ -24,8 +26,11 @@ export function DataListPage({
   isEmpty,
   emptyTitle,
   emptyDescription,
+  showChildrenWhenEmpty = true,
   children,
 }: DataListPageProps) {
+  const showEmptyOnly = isEmpty && !showChildrenWhenEmpty;
+
   return (
     <div className="space-y-6">
       <PageHeader title={title} description={description} />
@@ -33,10 +38,10 @@ export function DataListPage({
       {error ? (
         <ErrorState description="Unable to load data from the API." />
       ) : null}
-      {!isLoading && !error && isEmpty && (
+      {!isLoading && !error && showEmptyOnly && (
         <EmptyState title={emptyTitle} description={emptyDescription} />
       )}
-      {!isLoading && !error && !isEmpty && children}
+      {!isLoading && !error && !showEmptyOnly && children}
     </div>
   );
 }

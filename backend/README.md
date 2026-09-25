@@ -1,6 +1,6 @@
-# PRJ_649 Backend
+# ScholarPulse Backend
 
-FastAPI backend for the Digital Academic Performance Monitoring and Institutional Analytics System.
+FastAPI backend for ScholarPulse.
 
 ## Setup
 

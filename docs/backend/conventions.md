@@ -1,0 +1,1 @@
+--8<-- "../api-conventions.md"

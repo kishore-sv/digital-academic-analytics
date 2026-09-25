@@ -3,7 +3,7 @@
 from datetime import date as DateType
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 # Institution
@@ -138,17 +138,24 @@ class StudentCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     roll_number: str = Field(..., min_length=1, max_length=50)
     password: str = Field(..., min_length=6)
-    department_id: str
+    department_id: str = Field(..., min_length=1)
     program_id: str | None = None
-    semester: int = Field(default=1, ge=1, le=8)
+    semester: int = Field(default=1, ge=1, le=12)
     branch: str = Field(default="CSE", max_length=50)
+
+    @field_validator("program_id", mode="before")
+    @classmethod
+    def normalize_program_id(cls, value: str | None) -> str | None:
+        if value is None or value == "":
+            return None
+        return value
 
 
 class StudentUpdate(BaseModel):
     name: str | None = None
     department_id: str | None = None
     program_id: str | None = None
-    semester: int | None = Field(default=None, ge=1, le=8)
+    semester: int | None = Field(default=None, ge=1, le=12)
     branch: str | None = None
 
 

@@ -1,6 +1,6 @@
 # Deployment
 
-Production deployment guide for PRJ_649 Academic Analytics.
+Production deployment guide for ScholarPulse.
 
 ## Architecture
 
@@ -41,11 +41,31 @@ bun run start
 - Backend: `GET /health` → `{"status":"ok","models_loaded":true}`
 - Client: root page loads; login redirects to role dashboard
 
+## Backend docs on GitHub Pages
+
+Static **backend API documentation** (MkDocs + ReDoc) deploys on push to `main`:
+
+1. In the repo on GitHub: **Settings → Pages → Build and deployment → Source: GitHub Actions**
+2. Push to `main` (or run workflow **Deploy backend docs (GitHub Pages)** manually).
+3. Site URL: `https://<your-username>.github.io/<repo-name>/`
+
+Includes generated markdown reference, auth/tenancy guides, and interactive **ReDoc** (`openapi.json` from the FastAPI app).
+
+Local preview:
+
+```bash
+cd backend && uv run python scripts/generate_api_docs.py && uv run python scripts/export_openapi.py
+pip install mkdocs-material
+mkdocs serve
+```
+
 ## CI/CD
 
 GitHub Actions (`.github/workflows/ci.yml`) runs on every PR:
 - Backend: migrate, seed, ruff, pytest
 - Client: lint, build
+
+Docs: `.github/workflows/docs-pages.yml` publishes backend docs to GitHub Pages.
 
 ## Related Documentation
 

@@ -21,6 +21,21 @@ function cellKey(enrollmentId: string, assessmentId: string): CellKey {
   return `${enrollmentId}:${assessmentId}`;
 }
 
+function assessmentTypeLabel(type: string): string {
+  switch (type.toUpperCase()) {
+    case "CA":
+      return "CA";
+    case "MID":
+      return "Mid-Term";
+    case "FINAL":
+      return "End-Term";
+    case "ASSIGNMENT":
+      return "Assignment";
+    default:
+      return type;
+  }
+}
+
 interface MarksEntryTableProps {
   grid: MarksGrid | undefined;
   isLoading: boolean;
@@ -198,7 +213,9 @@ export function MarksEntryTable({
               <TableHead className="sticky left-48 z-10 min-w-28 bg-background">Reg No</TableHead>
               {grid.assessments.map((a) => (
                 <TableHead key={a.id} className="min-w-20 text-center">
-                  <div className="text-xs font-normal text-muted-foreground">{a.assessment_type}</div>
+                  <div className="text-xs font-normal text-muted-foreground">
+                    {assessmentTypeLabel(a.assessment_type)}
+                  </div>
                   {a.name}
                   <div className="text-xs font-normal">/{a.max_marks}</div>
                 </TableHead>

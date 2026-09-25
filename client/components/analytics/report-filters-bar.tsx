@@ -51,7 +51,7 @@ export function ReportFiltersBar({
 }: ReportFiltersBarProps) {
   const { data: deptData } = useDepartments();
   const { data: programList } = usePrograms();
-  const { data: courseData } = useCourses(1, 200);
+  const { data: courseData } = useCourses(1, 100);
   const departments = deptData?.data ?? [];
   const programs = programList?.data ?? [];
   const courses = courseData?.data ?? [];

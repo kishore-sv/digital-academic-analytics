@@ -1,4 +1,8 @@
-# API Reference
+# API Reference (overview)
+
+**Interactive docs (inputs/outputs per endpoint):** see [backend-api.md](backend-api.md) — Swagger at http://localhost:8000/docs and ReDoc at http://localhost:8000/redoc.
+
+**Full generated list:** [api-reference.generated.md](api-reference.generated.md) (`cd backend && uv run python scripts/generate_api_docs.py`).
 
 Base URL: `http://localhost:8000/api/v1`
 

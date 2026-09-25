@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,6 +27,7 @@ import {
   useDeleteStudent,
   useStudents,
 } from "@/hooks/use-students";
+import { showErrorToast } from "@/lib/toast";
 
 export default function AdminStudentsPage() {
   const { data, isLoading, error } = useStudents();
@@ -106,16 +107,48 @@ export default function AdminStudentsPage() {
     branch: "CSE",
   });
 
+  useEffect(() => {
+    if (departments.length > 0 && !form.department_id) {
+      setForm((current) => ({
+        ...current,
+        department_id: departments[0].id,
+      }));
+    }
+  }, [departments, form.department_id]);
+
   const handleCreate = async () => {
+    const name = form.name.trim();
+    const rollNumber = form.roll_number.trim();
+    const semester = parseInt(form.semester, 10);
+
+    if (!name || !rollNumber) {
+      showErrorToast({ description: "Name and roll number are required." });
+      return;
+    }
+    if (!form.department_id) {
+      showErrorToast({
+        description: "Select a department, or create one under Departments first.",
+      });
+      return;
+    }
+    if (form.password.length < 6) {
+      showErrorToast({ description: "Password must be at least 6 characters." });
+      return;
+    }
+    if (Number.isNaN(semester) || semester < 1 || semester > 12) {
+      showErrorToast({ description: "Semester must be between 1 and 12." });
+      return;
+    }
+
     try {
       await createStudent.mutateAsync({
-        name: form.name,
-        roll_number: form.roll_number,
+        name,
+        roll_number: rollNumber,
         password: form.password,
         department_id: form.department_id,
         program_id: form.program_id || undefined,
-        semester: parseInt(form.semester, 10),
-        branch: form.branch,
+        semester,
+        branch: form.branch.trim() || "CSE",
       });
       setOpen(false);
       setForm({
@@ -233,30 +266,40 @@ export default function AdminStudentsPage() {
                 <Label>Password</Label>
                 <PasswordInput
                   autoComplete="new-password"
+                  minLength={6}
                   value={form.password}
                   onChange={(e) =>
                     setForm({ ...form, password: e.target.value })
                   }
                 />
+                <p className="text-xs text-muted-foreground">
+                  At least 6 characters (used for student login).
+                </p>
               </div>
               <div className="space-y-1">
                 <Label>Department</Label>
-                <Select
-                  items={departmentItems}
-                  value={form.department_id}
-                  onValueChange={(v) =>
-                    setForm({ ...form, department_id: v ?? "" })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {departments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Add a department first (Departments menu), then create students.
+                  </p>
+                ) : (
+                  <Select
+                    items={departmentItems}
+                    value={form.department_id}
+                    onValueChange={(v) =>
+                      setForm({ ...form, department_id: v ?? "" })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="space-y-1">
                 <Label>Program (optional)</Label>
@@ -296,7 +339,14 @@ export default function AdminStudentsPage() {
                   />
                 </div>
               </div>
-              <Button onClick={handleCreate} disabled={createStudent.isPending}>
+              <Button
+                onClick={handleCreate}
+                disabled={
+                  createStudent.isPending ||
+                  departments.length === 0 ||
+                  !form.department_id
+                }
+              >
                 Create
               </Button>
             </div>
@@ -305,7 +355,9 @@ export default function AdminStudentsPage() {
       </div>
       {filteredStudents.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No students match the selected filters.
+          {students.length === 0
+            ? "No students yet. Click Add Student to create one."
+            : "No students match the selected filters."}
         </p>
       ) : (
         <StudentTable

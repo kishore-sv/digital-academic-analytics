@@ -1,0 +1,1 @@
+--8<-- "../api-reference.generated.md"

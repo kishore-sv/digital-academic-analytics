@@ -37,6 +37,9 @@ backend/app/ml/models/*.pkl
 # Jupyter
 .ipynb_checkpoints/
 
+# MkDocs local build output
+/site/
+
 # OS
 .DS_Store
 Thumbs.db

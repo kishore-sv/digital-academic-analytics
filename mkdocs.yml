@@ -1,0 +1,55 @@
+# Backend API documentation site (GitHub Pages)
+# Local: pip install mkdocs-material && mkdocs serve
+# Build: see .github/workflows/docs-pages.yml
+
+site_name: PRJ_649 Backend API
+site_description: FastAPI backend reference for Digital Academic Analytics
+site_url: !ENV [SITE_URL, "http://127.0.0.1:8000/"]
+
+docs_dir: docs/backend
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Dark mode
+    - scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - search.suggest
+
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.snippets:
+      base_path: ["docs"]
+  - pymdownx.superfences
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Interactive API (ReDoc): redoc.md
+  - Guide: api-guide.md
+  - Folder structure: structure.md
+  - API reference (generated): api-reference.md
+  - Short index: api-index.md
+  - Conventions: conventions.md
+  - Authentication: authentication.md
+  - Authorization: authorization.md
+  - Multi-tenancy: multi-tenancy.md
+  - Security: security.md
+  - Database: database.md
+  - Migrations: migrations.md
+  - User roles: user-roles.md

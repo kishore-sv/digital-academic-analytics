@@ -165,7 +165,9 @@ export default function AdminFacultyPage() {
       </div>
       {filteredFaculty.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No faculty match the selected filters.
+          {faculty.length === 0
+            ? "No faculty yet. Click Add Faculty to create one."
+            : "No faculty match the selected filters."}
         </p>
       ) : (
         <Table>

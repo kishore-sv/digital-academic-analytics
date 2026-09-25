@@ -11,7 +11,11 @@ from app.models.enrollment import Assessment, AssessmentMark, Enrollment
 from app.models.program import Program
 from app.models.semester import Semester
 from app.models.student import Student
-from app.services.authorization_service import get_accessible_student_ids
+STANDARD_ASSESSMENTS: list[tuple[str, str, int]] = [
+    ("Continuous Assessment", "CA", 100),
+    ("Mid-Term Exam", "MID", 100),
+    ("End-Term Exam", "FINAL", 100),
+]
 
 
 def get_assigned_course_ids(db: Session, faculty_id: uuid.UUID) -> list[uuid.UUID]:
@@ -23,6 +27,39 @@ def get_assigned_course_ids(db: Session, faculty_id: uuid.UUID) -> list[uuid.UUI
         .all()
     )
     return [r[0] for r in rows]
+
+
+def ensure_standard_assessments(
+    db: Session,
+    institution_id: uuid.UUID,
+    course_id: uuid.UUID,
+) -> None:
+    """Ensure CA, MID, and FINAL assessments exist for marks entry."""
+    existing = (
+        db.query(Assessment.assessment_type)
+        .filter(
+            Assessment.course_id == course_id,
+            Assessment.institution_id == institution_id,
+        )
+        .all()
+    )
+    existing_types = {row[0].upper() for row in existing}
+    added = False
+    for name, atype, max_marks in STANDARD_ASSESSMENTS:
+        if atype in existing_types:
+            continue
+        db.add(
+            Assessment(
+                institution_id=institution_id,
+                course_id=course_id,
+                name=name,
+                assessment_type=atype,
+                max_marks=max_marks,
+            )
+        )
+        added = True
+    if added:
+        db.commit()
 
 
 def filter_enrollments_query(
@@ -84,6 +121,8 @@ def build_marks_grid(
     course = db.query(Course).filter(Course.id == course_id, Course.institution_id == institution_id).first()
     if not course:
         return {"assessments": [], "students": [], "course": None}
+
+    ensure_standard_assessments(db, institution_id, course_id)
 
     assessments = (
         db.query(Assessment)

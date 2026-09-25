@@ -2,11 +2,7 @@
 
 ## Project Title
 
-**Digital Academic Performance Monitoring and Institutional Analytics System**
-
-## Project ID
-
-PRJ_649
+**ScholarPulse** — academic performance monitoring and institutional analytics
 
 ## Team
 
