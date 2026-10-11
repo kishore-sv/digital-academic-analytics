@@ -18,7 +18,7 @@ def _login(client, identifier: str, password: str, role: str):
 
 class TestGoals:
     def test_student_goal_crud(self, client):
-        _login(client, "20231CSE0260", "student123", "student")
+        _login(client, "26CSE001", "student123", "student")
 
         create_resp = client.post(
             f"{API}/goals",
@@ -55,7 +55,7 @@ class TestScopedAnalytics:
         assert "average_cgpa" in data
 
     def test_student_scoped_overview(self, client):
-        _login(client, "20231CSE0260", "student123", "student")
+        _login(client, "26CSE001", "student123", "student")
         response = client.get(f"{API}/analytics/scoped/overview")
         assert response.status_code == 200
 

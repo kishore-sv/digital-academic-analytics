@@ -49,7 +49,7 @@ python setup.py --start
 | Flag | Purpose |
 |------|---------|
 | `--start` | Start `uvicorn` and `bun dev` after setup |
-| `--cse-demo` | Larger CSE/ECE/IST seed instead of default bulk seed |
+| `--minimal` | Small CSE slice instead of the 2,400-student dataset |
 | `--no-seed` | Migrations only, no reseed |
 | `--no-docker` | Skip Docker (Postgres already running) |
 | `--skip-ml` | Skip `ml/` uv sync |

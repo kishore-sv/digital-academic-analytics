@@ -53,6 +53,19 @@ export interface AttendancePerformancePoint {
   performance_value: number;
 }
 
+export interface AttendanceTrendPoint {
+  date: string;
+  attendance_percentage: number;
+}
+
+export interface AttendanceTrend {
+  points: AttendanceTrendPoint[];
+  current_percentage: number | null;
+  average_percentage: number | null;
+  highest_percentage: number | null;
+  lowest_percentage: number | null;
+}
+
 export interface PerformanceIndicators {
   improving: number;
   stable: number;

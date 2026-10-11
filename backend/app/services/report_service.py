@@ -83,7 +83,8 @@ def render_institutional_report_html(context: ReportContext, include_charts: boo
     )
     at_risk_rows = "".join(
         f"<tr><td>{s.roll_number}</td><td>{s.student_name}</td><td>{s.department_name or '—'}</td>"
-        f"<td>{s.semester or '—'}</td><td>{s.cgpa if s.cgpa is not None else '—'}</td>"
+        f"<td>{s.semester_number if s.semester_number is not None else '—'}</td>"
+        f"<td>{s.cgpa if s.cgpa is not None else '—'}</td>"
         f"<td>{s.attendance_percentage if s.attendance_percentage is not None else '—'}</td>"
         f"<td>{s.backlog_count if s.backlog_count is not None else '—'}</td>"
         f"<td>{s.risk_score:.1f}</td><td>{_risk_badge(s.risk_level)}</td>"

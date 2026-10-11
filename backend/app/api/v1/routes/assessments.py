@@ -167,7 +167,11 @@ def get_marks_grid(
     semester_id: str | None = Query(None),
     department_id: str | None = Query(None),
     program_id: str | None = Query(None),
-    section: str | None = Query(None),
+    batch_id: str | None = Query(None),
+    class_group_id: str | None = Query(None),
+    section_id: str | None = Query(None),
+    year_number: int | None = Query(None, ge=1, le=8),
+    assessment_id: str | None = Query(None),
     search: str | None = Query(None),
 ):
     from app.services.authorization_service import get_marks_entry_student_scope
@@ -176,14 +180,31 @@ def get_marks_grid(
     get_entity_or_404(db, Course, course_uuid, current.institution_id)
     accessible = get_marks_entry_student_scope(db, current.user, course_uuid)
 
+    semester_uuid = parse_uuid(semester_id, "semester_id") if semester_id else None
+    if semester_id and year_number is not None:
+        from app.models.semester import Semester
+
+        semester_row = get_entity_or_404(
+            db, Semester, semester_uuid, current.institution_id
+        )
+        if semester_row.year_number != year_number:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Semester does not match the selected year of study",
+            )
+
     grid = build_marks_grid(
         db,
         current.institution_id,
         course_uuid,
-        semester_id=parse_uuid(semester_id, "semester_id") if semester_id else None,
+        semester_id=semester_uuid,
         department_id=parse_uuid(department_id, "department_id") if department_id else None,
         program_id=parse_uuid(program_id, "program_id") if program_id else None,
-        section=section,
+        batch_id=parse_uuid(batch_id, "batch_id") if batch_id else None,
+        class_group_id=parse_uuid(class_group_id, "class_group_id") if class_group_id else None,
+        section_id=parse_uuid(section_id, "section_id") if section_id else None,
+        year_number=year_number,
+        assessment_id=parse_uuid(assessment_id, "assessment_id") if assessment_id else None,
         search=search,
         accessible_student_ids=accessible,
     )

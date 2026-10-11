@@ -5,13 +5,13 @@ from __future__ import annotations
 import uuid
 from collections import Counter
 
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.api.v1.analytics_filters import AnalyticsFilterParams
 from app.api.v1.helpers import parse_uuid
 from app.models.department import Department
-from app.models.enrollment import CourseResult, Enrollment, SemesterResult
+from app.models.enrollment import Attendance, CourseResult, Enrollment, SemesterResult
 from app.models.prediction import PredictionResult
 from app.models.semester import Semester
 from app.models.student import Student
@@ -20,6 +20,8 @@ from app.models.course import Course
 from app.schemas.analytics import (
     ActualVsPredictedPoint,
     AttendancePerformancePoint,
+    AttendanceTrend,
+    AttendanceTrendPoint,
     ChartBucket,
     CourseAnalytics,
     DepartmentAnalytics,
@@ -330,45 +332,48 @@ def get_performance_trends_filtered(
     filters: AnalyticsFilterParams,
     scope_ids: list[uuid.UUID] | None = None,
 ) -> list[PerformanceTrendPoint]:
-    sem_query = db.query(Semester).filter(Semester.institution_id == institution_id)
-    if filters.academic_year_id:
-        sem_query = sem_query.filter(
-            Semester.academic_year_id
-            == parse_uuid(filters.academic_year_id, "academic_year_id")
+    """Average SGPA/CGPA by semester number for the filtered students.
+
+    The selected academic year scopes which students are included. Completed
+    results live on earlier semester records, so they are grouped by semester
+    number rather than by the current year's unfinished semester rows.
+    """
+    student_ids = _student_ids_for_filters(db, institution_id, filters, scope_ids)
+    if student_ids is not None and not student_ids:
+        return []
+    pass_count = func.sum(case((SemesterResult.cgpa >= 5, 1), else_=0))
+    query = (
+        db.query(
+            Semester.number,
+            func.avg(SemesterResult.sgpa),
+            func.avg(SemesterResult.cgpa),
+            func.count(SemesterResult.id),
+            pass_count,
         )
+        .join(Semester, SemesterResult.semester_id == Semester.id)
+        .filter(
+            SemesterResult.institution_id == institution_id,
+            Semester.institution_id == institution_id,
+        )
+    )
     if filters.semester_id:
-        sem_query = sem_query.filter(
+        query = query.filter(
             Semester.id == parse_uuid(filters.semester_id, "semester_id")
         )
-    semesters = sem_query.order_by(Semester.number).all()
-    student_ids = _student_ids_for_filters(db, institution_id, filters, scope_ids)
+    if student_ids is not None:
+        query = query.filter(SemesterResult.student_id.in_(student_ids))
+    rows = query.group_by(Semester.number).order_by(Semester.number).all()
     trends = []
-    for sem in semesters:
-        sr_query = db.query(SemesterResult).filter(
-            SemesterResult.semester_id == sem.id,
-            SemesterResult.institution_id == institution_id,
-        )
-        if student_ids is not None:
-            if not student_ids:
-                trends.append(
-                    PerformanceTrendPoint(semester=sem.name)
-                )
-                continue
-            sr_query = sr_query.filter(SemesterResult.student_id.in_(student_ids))
-        results = sr_query.all()
-        if not results:
-            trends.append(PerformanceTrendPoint(semester=sem.name))
+    for number, avg_sgpa, avg_cgpa, total, passed in rows:
+        total_n = int(total or 0)
+        if total_n == 0:
             continue
-        avg_sgpa = sum(r.sgpa or 0 for r in results) / len(results)
-        avg_cgpa = sum(r.cgpa or 0 for r in results) / len(results)
-        pass_count = sum(1 for r in results if (r.cgpa or 0) >= 5.0)
-        pass_pct = pass_count / len(results) * 100
         trends.append(
             PerformanceTrendPoint(
-                semester=sem.name,
-                average_sgpa=round(avg_sgpa, 2),
-                average_cgpa=round(avg_cgpa, 2),
-                pass_percentage=round(pass_pct, 2),
+                semester=f"Semester {number}",
+                average_sgpa=round(float(avg_sgpa), 2) if avg_sgpa is not None else None,
+                average_cgpa=round(float(avg_cgpa), 2) if avg_cgpa is not None else None,
+                pass_percentage=round(100.0 * int(passed or 0) / total_n, 2),
             )
         )
     return trends
@@ -380,41 +385,39 @@ def get_pass_fail_trend(
     filters: AnalyticsFilterParams,
     scope_ids: list[uuid.UUID] | None = None,
 ) -> list[PassFailTrendPoint]:
-    sem_query = db.query(Semester).filter(Semester.institution_id == institution_id)
-    if filters.academic_year_id:
-        sem_query = sem_query.filter(
-            Semester.academic_year_id
-            == parse_uuid(filters.academic_year_id, "academic_year_id")
-        )
-    semesters = sem_query.order_by(Semester.number).all()
+    """Course pass/fail counts by semester number for the filtered students."""
     student_ids = _student_ids_for_filters(db, institution_id, filters, scope_ids)
-    points = []
-    for sem in semesters:
-        enroll_query = db.query(Enrollment).filter(
-            Enrollment.semester_id == sem.id,
+    if student_ids is not None and not student_ids:
+        return []
+    query = (
+        db.query(Semester.number, CourseResult.status, func.count(CourseResult.id))
+        .join(Enrollment, CourseResult.enrollment_id == Enrollment.id)
+        .join(Semester, Enrollment.semester_id == Semester.id)
+        .filter(
             Enrollment.institution_id == institution_id,
+            CourseResult.institution_id == institution_id,
+            Semester.institution_id == institution_id,
+            CourseResult.status.in_(("PASS", "FAIL")),
         )
-        if student_ids is not None:
-            if not student_ids:
-                points.append(PassFailTrendPoint(semester=sem.name, pass_count=0, fail_count=0))
-                continue
-            enroll_query = enroll_query.filter(Enrollment.student_id.in_(student_ids))
-        enrollments = enroll_query.all()
-        pass_count = fail_count = 0
-        for e in enrollments:
-            if e.course_result:
-                if e.course_result.status == "PASS":
-                    pass_count += 1
-                elif e.course_result.status == "FAIL":
-                    fail_count += 1
-        points.append(
-            PassFailTrendPoint(
-                semester=sem.name,
-                pass_count=pass_count,
-                fail_count=fail_count,
-            )
+    )
+    if filters.semester_id:
+        query = query.filter(
+            Semester.id == parse_uuid(filters.semester_id, "semester_id")
         )
-    return points
+    if student_ids is not None:
+        query = query.filter(Enrollment.student_id.in_(student_ids))
+    counts: dict[int, dict[str, int]] = {}
+    for number, status, total in query.group_by(Semester.number, CourseResult.status).all():
+        bucket = counts.setdefault(int(number), {"PASS": 0, "FAIL": 0})
+        bucket[status] = int(total or 0)
+    return [
+        PassFailTrendPoint(
+            semester=f"Semester {number}",
+            pass_count=counts[number]["PASS"],
+            fail_count=counts[number]["FAIL"],
+        )
+        for number in sorted(counts)
+    ]
 
 
 def get_attendance_performance(
@@ -422,13 +425,22 @@ def get_attendance_performance(
     institution_id: uuid.UUID,
     filters: AnalyticsFilterParams,
     scope_ids: list[uuid.UUID] | None = None,
-    limit: int = 200,
+    limit: int = 400,
 ) -> list[AttendancePerformancePoint]:
-    query = db.query(Enrollment).filter(Enrollment.institution_id == institution_id)
-    if scope_ids is not None:
-        if not scope_ids:
-            return []
-        query = query.filter(Enrollment.student_id.in_(scope_ids))
+    """Scatter of attendance % against course marks for completed enrollments."""
+    student_ids = _student_ids_for_filters(db, institution_id, filters, scope_ids)
+    if student_ids is not None and not student_ids:
+        return []
+    query = (
+        db.query(Enrollment.attendance_percentage, CourseResult.end_marks)
+        .join(CourseResult, CourseResult.enrollment_id == Enrollment.id)
+        .filter(
+            Enrollment.institution_id == institution_id,
+            CourseResult.institution_id == institution_id,
+            Enrollment.attendance_percentage.isnot(None),
+            CourseResult.end_marks.isnot(None),
+        )
+    )
     if filters.semester_id:
         query = query.filter(
             Enrollment.semester_id == parse_uuid(filters.semester_id, "semester_id")
@@ -437,31 +449,92 @@ def get_attendance_performance(
         query = query.filter(
             Enrollment.course_id == parse_uuid(filters.course_id, "course_id")
         )
-    enrollments = query.limit(limit).all()
-    points = []
-    for e in enrollments:
-        if e.attendance_percentage is None:
+    if student_ids is not None:
+        query = query.filter(Enrollment.student_id.in_(student_ids))
+    rows = query.order_by(Enrollment.id).limit(limit).all()
+    return [
+        AttendancePerformancePoint(
+            attendance_percentage=round(float(attendance), 2),
+            performance_value=round(float(marks), 2),
+        )
+        for attendance, marks in rows
+    ]
+
+
+def get_attendance_trend(
+    db: Session,
+    institution_id: uuid.UUID,
+    filters: AnalyticsFilterParams,
+) -> AttendanceTrend:
+    """Daily attendance % from event rows: present / all events, grouped by date."""
+    present_count = func.sum(case((Attendance.status == "present", 1), else_=0))
+    total_count = func.count(Attendance.id)
+    query = (
+        db.query(Attendance.date, present_count, total_count)
+        .join(Enrollment, Attendance.enrollment_id == Enrollment.id)
+        .join(Semester, Enrollment.semester_id == Semester.id)
+        .filter(
+            Attendance.institution_id == institution_id,
+            Enrollment.institution_id == institution_id,
+            Semester.institution_id == institution_id,
+        )
+    )
+    if filters.semester_id:
+        query = query.filter(
+            Enrollment.semester_id == parse_uuid(filters.semester_id, "semester_id")
+        )
+    if filters.academic_year_id:
+        query = query.filter(
+            Semester.academic_year_id
+            == parse_uuid(filters.academic_year_id, "academic_year_id")
+        )
+    if filters.department_id or filters.program_id:
+        query = query.join(Student, Enrollment.student_id == Student.id).filter(
+            Student.institution_id == institution_id
+        )
+        if filters.department_id:
+            query = query.filter(
+                Student.department_id
+                == parse_uuid(filters.department_id, "department_id")
+            )
+        if filters.program_id:
+            query = query.filter(
+                Student.program_id == parse_uuid(filters.program_id, "program_id")
+            )
+    if filters.course_id:
+        query = query.filter(
+            Enrollment.course_id == parse_uuid(filters.course_id, "course_id")
+        )
+
+    rows = query.group_by(Attendance.date).order_by(Attendance.date).all()
+    points: list[AttendanceTrendPoint] = []
+    raw_percentages: list[float] = []
+    present_total = 0
+    event_total = 0
+    for attendance_date, present, total in rows:
+        total_n = int(total or 0)
+        if total_n <= 0:
             continue
-        marks = e.course_result.end_marks if e.course_result else None
-        if marks is None:
-            sr = (
-                db.query(SemesterResult.cgpa)
-                .filter(
-                    SemesterResult.student_id == e.student_id,
-                    SemesterResult.institution_id == institution_id,
-                )
-                .order_by(SemesterResult.created_at.desc())
-                .first()
+        present_n = int(present or 0)
+        percentage = 100.0 * present_n / total_n
+        present_total += present_n
+        event_total += total_n
+        raw_percentages.append(percentage)
+        points.append(
+            AttendanceTrendPoint(
+                date=attendance_date,
+                attendance_percentage=round(percentage, 1),
             )
-            marks = float(sr[0]) * 10 if sr and sr[0] else None
-        if marks is not None:
-            points.append(
-                AttendancePerformancePoint(
-                    attendance_percentage=round(e.attendance_percentage, 2),
-                    performance_value=round(float(marks), 2),
-                )
-            )
-    return points
+        )
+    if not points or event_total == 0:
+        return AttendanceTrend()
+    return AttendanceTrend(
+        points=points,
+        current_percentage=points[-1].attendance_percentage,
+        average_percentage=round(100.0 * present_total / event_total, 1),
+        highest_percentage=round(max(raw_percentages), 1),
+        lowest_percentage=round(min(raw_percentages), 1),
+    )
 
 
 def get_performance_indicators(

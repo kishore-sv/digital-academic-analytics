@@ -77,7 +77,7 @@ export function ReportAtRiskTable({ students }: { students: AtRiskReportRow[] })
             <TableCell className="font-mono text-sm">{s.roll_number}</TableCell>
             <TableCell>{s.department_name ?? "—"}</TableCell>
             <TableCell>{s.program_name ?? "—"}</TableCell>
-            <TableCell>{s.semester ?? "—"}</TableCell>
+            <TableCell>{s.semester_number ?? "—"}</TableCell>
             <TableCell>{s.cgpa?.toFixed(2) ?? "—"}</TableCell>
             <TableCell>
               {s.attendance_percentage != null ? `${s.attendance_percentage.toFixed(0)}%` : "—"}

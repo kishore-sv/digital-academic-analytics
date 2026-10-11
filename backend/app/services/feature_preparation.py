@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.enrollment import Enrollment, SemesterResult
 from app.models.student import Student
@@ -20,6 +20,11 @@ def build_features_from_enrollment(
         .filter(
             Enrollment.id == enrollment_id,
             Enrollment.institution_id == institution_id,
+        )
+        .options(
+            joinedload(Enrollment.student).joinedload(Student.department),
+            joinedload(Enrollment.student).joinedload(Student.current_semester),
+            joinedload(Enrollment.semester),
         )
         .first()
     )
@@ -71,8 +76,12 @@ def build_features_from_enrollment(
         "backlog_count": backlog,
         "course_credits": course.credits,
         "course_type": course.course_type,
-        "branch": student.branch,
-        "semester": student.semester,
+        "branch": student.department.code if student.department else "UNK",
+        "semester": (
+            student.current_semester.number
+            if student.current_semester
+            else enrollment.semester.number
+        ),
         "current_failed_courses": failed,
         "low_performance_course_count": low_perf,
         "performance_trend": trend,
@@ -86,6 +95,10 @@ def build_features_from_student(
     student = (
         db.query(Student)
         .filter(Student.id == student_id, Student.institution_id == institution_id)
+        .options(
+            joinedload(Student.department),
+            joinedload(Student.current_semester),
+        )
         .first()
     )
     if not student:
@@ -125,8 +138,8 @@ def build_features_from_student(
         "backlog_count": semester_result.backlog_count if semester_result else 0,
         "course_credits": 3,
         "course_type": "THEORY",
-        "branch": student.branch,
-        "semester": student.semester,
+        "branch": student.department.code if student.department else "UNK",
+        "semester": student.current_semester.number if student.current_semester else 1,
         "current_failed_courses": semester_result.current_failed_courses if semester_result else 0,
         "low_performance_course_count": semester_result.low_performance_course_count if semester_result else 0,
         "performance_trend": semester_result.performance_trend if semester_result else "STABLE",

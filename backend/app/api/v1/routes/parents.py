@@ -7,8 +7,12 @@ from app.core.security import hash_password
 from app.models.parent import Parent, ParentStudent
 from app.models.student import Student
 from app.models.user import User
-from app.schemas.academic import ParentCreate, ParentResponse, ParentUpdate
+from app.schemas.academic import ParentCreate, ParentResponse, ParentStudentLink, ParentUpdate
 from app.schemas.common import PaginatedResponse, PaginationParams
+from app.services.academic_validation_service import (
+    validate_parent_student_link,
+    validate_relationship_type,
+)
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
@@ -25,7 +29,16 @@ def _to_response(parent: Parent, db: DbSession) -> ParentResponse:
         id=str(parent.id),
         name=parent.name,
         user_id=str(parent.user_id),
+        phone=parent.phone,
         linked_student_ids=[str(link.student_id) for link in links],
+        student_links=[
+            ParentStudentLink(
+                student_id=str(link.student_id),
+                relationship_type=link.relationship_type,
+                is_primary_guardian=link.is_primary_guardian,
+            )
+            for link in links
+        ],
     )
 
 
@@ -71,15 +84,24 @@ def create_parent(body: ParentCreate, current: AdminUser, db: DbSession):
         institution_id=current.institution_id,
         user_id=user.id,
         name=body.name,
+        phone=body.phone,
     )
     db.add(parent)
     db.flush()
 
-    for sid in body.student_ids:
+    for link in body.student_links:
         student = get_entity_or_404(
-            db, Student, parse_uuid(sid, "student_id"), current.institution_id
+            db, Student, parse_uuid(link.student_id, "student_id"), current.institution_id
         )
-        db.add(ParentStudent(parent_id=parent.id, student_id=student.id))
+        rel = validate_relationship_type(link.relationship_type)
+        db.add(
+            ParentStudent(
+                parent_id=parent.id,
+                student_id=student.id,
+                relationship_type=rel,
+                is_primary_guardian=link.is_primary_guardian,
+            )
+        )
 
     try:
         db.commit()
@@ -125,6 +147,8 @@ def update_parent(
     )
     if body.name is not None:
         parent.name = body.name
+    if body.phone is not None:
+        parent.phone = body.phone
     db.commit()
     db.refresh(parent)
     return _to_response(parent, db)
@@ -165,26 +189,33 @@ def link_child(
     student_id: str,
     current: AdminUser,
     db: DbSession,
+    relationship_type: str = "GUARDIAN",
+    is_primary_guardian: bool = False,
 ):
-    parent = get_entity_or_404(
-        db, Parent, parse_uuid(parent_id), current.institution_id
-    )
-    student = get_entity_or_404(
-        db, Student, parse_uuid(student_id), current.institution_id
-    )
+    parent_uuid = parse_uuid(parent_id)
+    student_uuid = parse_uuid(student_id)
+    validate_parent_student_link(db, current.institution_id, parent_uuid, student_uuid)
+    rel = validate_relationship_type(relationship_type)
     existing = (
         db.query(ParentStudent)
         .filter(
-            ParentStudent.parent_id == parent.id,
-            ParentStudent.student_id == student.id,
+            ParentStudent.parent_id == parent_uuid,
+            ParentStudent.student_id == student_uuid,
         )
         .first()
     )
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already linked")
-    db.add(ParentStudent(parent_id=parent.id, student_id=student.id))
+    db.add(
+        ParentStudent(
+            parent_id=parent_uuid,
+            student_id=student_uuid,
+            relationship_type=rel,
+            is_primary_guardian=is_primary_guardian,
+        )
+    )
     db.commit()
-    return {"parent_id": str(parent.id), "student_id": str(student.id)}
+    return {"parent_id": parent_id, "student_id": student_id}
 
 
 @router.delete(

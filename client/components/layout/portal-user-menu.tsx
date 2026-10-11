@@ -14,9 +14,13 @@ import { getProfileHref, getUserDisplayName } from "@/lib/auth-routes";
 
 interface PortalUserMenuProps {
   variant?: "header" | "sidebar";
+  hideProfile?: boolean;
 }
 
-export function PortalUserMenu({ variant = "header" }: PortalUserMenuProps) {
+export function PortalUserMenu({
+  variant = "header",
+  hideProfile = false,
+}: PortalUserMenuProps) {
   const pathname = usePathname();
   const { user, logout, isLoading } = useAuth();
 
@@ -30,16 +34,18 @@ export function PortalUserMenu({ variant = "header" }: PortalUserMenuProps) {
   if (variant === "sidebar") {
     return (
       <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            tooltip="Profile"
-            isActive={pathname === profileHref}
-            render={<Link href={profileHref} />}
-          >
-            <IconUser />
-            <span>Profile</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+        {!hideProfile && (
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Profile"
+              isActive={pathname === profileHref}
+              render={<Link href={profileHref} />}
+            >
+              <IconUser />
+              <span>Profile</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )}
         <SidebarMenuItem>
           <SidebarMenuButton
             tooltip="Logout"

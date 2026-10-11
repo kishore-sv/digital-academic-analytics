@@ -1,7 +1,7 @@
 "use client";
 
 import { RoleShell } from "@/components/layout/role-shell";
-import { adminNavItems } from "@/components/layout/admin-nav";
+import { adminSidebarNav } from "@/components/layout/admin-nav";
 import { ROUTES } from "@/lib/constants";
 
 export default function AdminLayout({
@@ -11,9 +11,10 @@ export default function AdminLayout({
 }) {
   return (
     <RoleShell
-      navItems={adminNavItems}
+      navConfig={adminSidebarNav}
       roleLabel="Institution Admin"
       homeHref={ROUTES.admin.dashboard}
+      hideFooterProfile
     >
       {children}
     </RoleShell>

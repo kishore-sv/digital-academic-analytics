@@ -65,34 +65,50 @@ export interface MarksGrid {
 }
 
 export interface AttendanceRosterStudent {
-  enrollment_id: string;
+  enrollment_id: string | null;
   student_id: string;
   student_name: string;
   roll_number: string;
   section: string | null;
   attendance_percentage: number | null;
+  range_present: number | null;
+  range_absent: number | null;
+  range_percentage: number | null;
 }
 
 export interface AttendanceRoster {
-  course_id: string;
-  course_name: string;
-  course_code: string;
+  course_id: string | null;
+  course_name: string | null;
+  course_code: string | null;
+  date_from: string | null;
+  date_to: string | null;
+  status: string | null;
   students: AttendanceRosterStudent[];
 }
 
 export interface MarksEntryFilterParams {
   course_id?: string;
+  academic_year_id?: string;
   semester_id?: string;
   department_id?: string;
   program_id?: string;
-  section?: string;
+  batch_id?: string;
+  class_group_id?: string;
+  section_id?: string;
+  year_number?: number;
+  assessment_id?: string;
   search?: string;
+  date_from?: string;
+  date_to?: string;
+  status?: string;
 }
 
 function buildQueryParams(filters: MarksEntryFilterParams): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(filters)) {
-    if (value) params.set(key, value);
+    if (value !== undefined && value !== null && value !== "") {
+      params.set(key, String(value));
+    }
   }
   return params.toString();
 }
@@ -139,7 +155,7 @@ export function useAttendanceRoster(filters: MarksEntryFilterParams, enabled = t
   return useQuery({
     queryKey: ["attendance-roster", filters],
     queryFn: () => apiFetch<AttendanceRoster>(`/attendance/roster?${qs}`),
-    enabled: enabled && !!filters.course_id,
+    enabled,
   });
 }
 

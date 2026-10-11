@@ -19,6 +19,9 @@ import { showErrorToast, showSuccessToast } from "@/lib/toast";
 interface AttendanceEntryTableProps {
   roster: AttendanceRoster | undefined;
   isLoading: boolean;
+  hasApplied?: boolean;
+  showRange?: boolean;
+  canEdit?: boolean;
   onSave: (entries: { enrollment_id: string; attendance_percentage: number }[]) => Promise<void>;
   isSaving?: boolean;
 }
@@ -26,6 +29,9 @@ interface AttendanceEntryTableProps {
 export function AttendanceEntryTable({
   roster,
   isLoading,
+  hasApplied = true,
+  showRange = false,
+  canEdit = true,
   onSave,
   isSaving,
 }: AttendanceEntryTableProps) {
@@ -37,6 +43,7 @@ export function AttendanceEntryTable({
     if (!roster) return {};
     const init: Record<string, string> = {};
     for (const s of roster.students) {
+      if (!s.enrollment_id) continue;
       init[s.enrollment_id] =
         s.attendance_percentage != null ? String(s.attendance_percentage) : "";
     }
@@ -75,6 +82,7 @@ export function AttendanceEntryTable({
     const entries: { enrollment_id: string; attendance_percentage: number }[] = [];
 
     for (const s of roster.students) {
+      if (!s.enrollment_id) continue;
       const raw = values[s.enrollment_id] ?? "";
       const initial = initialValues[s.enrollment_id] ?? "";
       if (raw === initial) continue;
@@ -113,11 +121,22 @@ export function AttendanceEntryTable({
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Loading attendance roster…</p>;
   }
-  if (!roster) {
+  if (!hasApplied || !roster) {
     return (
       <p className="text-sm text-muted-foreground">
         Select filters and apply to load the attendance table.
       </p>
+    );
+  }
+
+  if (roster.students.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed p-6 text-sm">
+        <p className="font-medium">No attendance records found for this selection.</p>
+        <p className="mt-1 text-muted-foreground">
+          Try changing the date range or academic filters.
+        </p>
+      </div>
     );
   }
 
@@ -126,13 +145,22 @@ export function AttendanceEntryTable({
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-base">
-            {roster.course_code} — {roster.course_name}
+            {roster.course_code
+              ? `${roster.course_code} — ${roster.course_name}`
+              : "All matching courses"}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {roster.students.length} students{dirty ? " · Unsaved changes" : ""}
+            {roster.students.length} students
+            {showRange ? " · counts are for the selected dates" : ""}
+            {dirty ? " · Unsaved changes" : ""}
+            {!canEdit ? " · select a course to edit overall attendance %" : ""}
           </p>
         </div>
-        <Button onClick={handleSave} disabled={isSaving || !dirty}>Save Attendance</Button>
+        {canEdit && (
+          <Button onClick={handleSave} disabled={isSaving || !dirty}>
+            Save Attendance
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         <Table>
@@ -142,29 +170,54 @@ export function AttendanceEntryTable({
               <TableHead>Student</TableHead>
               <TableHead>Register No</TableHead>
               <TableHead>Section</TableHead>
-              <TableHead>Attendance %</TableHead>
+              <TableHead>Overall %</TableHead>
+              {showRange && (
+                <>
+                  <TableHead>Present</TableHead>
+                  <TableHead>Absent</TableHead>
+                  <TableHead>In selected dates</TableHead>
+                </>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {roster.students.map((s, index) => {
-              const err = errors[s.enrollment_id];
+              const key = s.enrollment_id ?? s.student_id;
+              const err = s.enrollment_id ? errors[s.enrollment_id] : undefined;
               return (
-                <TableRow key={s.enrollment_id}>
+                <TableRow key={key}>
                   <TableSerialCell index={index} />
                   <TableCell>{s.student_name}</TableCell>
                   <TableCell>{s.roll_number}</TableCell>
                   <TableCell>{s.section ?? "—"}</TableCell>
                   <TableCell>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      className={`w-24 ${err ? "border-destructive" : ""}`}
-                      value={values[s.enrollment_id] ?? ""}
-                      onChange={(e) => handleChange(s.enrollment_id, e.target.value)}
-                      title={err ?? undefined}
-                    />
+                    {canEdit && s.enrollment_id ? (
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        className={`w-24 ${err ? "border-destructive" : ""}`}
+                        value={values[s.enrollment_id] ?? ""}
+                        onChange={(e) =>
+                          handleChange(s.enrollment_id as string, e.target.value)
+                        }
+                        title={err ?? "Stored enrollment percentage"}
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">
+                        {s.attendance_percentage ?? "—"}
+                      </span>
+                    )}
                   </TableCell>
+                  {showRange && (
+                    <>
+                      <TableCell>{s.range_present ?? "—"}</TableCell>
+                      <TableCell>{s.range_absent ?? "—"}</TableCell>
+                      <TableCell>
+                        {s.range_percentage != null ? `${s.range_percentage}%` : "—"}
+                      </TableCell>
+                    </>
+                  )}
                 </TableRow>
               );
             })}

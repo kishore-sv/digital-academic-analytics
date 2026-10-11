@@ -1,5 +1,7 @@
 """Analytics response schemas."""
 
+from datetime import date
+
 from pydantic import BaseModel
 
 
@@ -56,6 +58,19 @@ class PassFailTrendPoint(BaseModel):
 class AttendancePerformancePoint(BaseModel):
     attendance_percentage: float
     performance_value: float
+
+
+class AttendanceTrendPoint(BaseModel):
+    date: date
+    attendance_percentage: float
+
+
+class AttendanceTrend(BaseModel):
+    points: list[AttendanceTrendPoint] = []
+    current_percentage: float | None = None
+    average_percentage: float | None = None
+    highest_percentage: float | None = None
+    lowest_percentage: float | None = None
 
 
 class PerformanceIndicators(BaseModel):

@@ -127,6 +127,56 @@ class TestMarksEntry:
         finally:
             db.close()
 
+    def test_marks_grid_filters_by_section(self, client):
+        _auth_client(client, ADMIN_EMAIL, ADMIN_PASSWORD, "institution_admin")
+        db = SessionLocal()
+        try:
+            from app.models.student import Student
+
+            enrollment = db.query(Enrollment).first()
+            assert enrollment is not None
+            student = db.query(Student).filter(Student.id == enrollment.student_id).first()
+            assert student is not None
+            base = f"{API}/assessments/marks-grid?course_id={enrollment.course_id}"
+            all_resp = client.get(base)
+            assert all_resp.status_code == 200
+            all_count = len(all_resp.json()["students"])
+            section_resp = client.get(
+                f"{base}&section_id={student.section_id}",
+            )
+            assert section_resp.status_code == 200
+            section_count = len(section_resp.json()["students"])
+            assert section_count <= all_count
+            assert section_count >= 1
+        finally:
+            db.close()
+
+    def test_marks_grid_filters_by_year_number(self, client):
+        _auth_client(client, ADMIN_EMAIL, ADMIN_PASSWORD, "institution_admin")
+        db = SessionLocal()
+        try:
+            from app.models.semester import Semester
+            from app.models.student import Student
+
+            enrollment = db.query(Enrollment).first()
+            student = (
+                db.query(Student).filter(Student.id == enrollment.student_id).first()
+            )
+            semester = (
+                db.query(Semester)
+                .filter(Semester.id == student.current_semester_id)
+                .first()
+            )
+            assert semester is not None
+            response = client.get(
+                f"{API}/assessments/marks-grid?course_id={enrollment.course_id}"
+                f"&year_number={semester.year_number}",
+            )
+            assert response.status_code == 200
+            assert len(response.json()["students"]) >= 1
+        finally:
+            db.close()
+
     def test_faculty_marks_grid_for_assigned_course(self, client):
         _auth_client(client, FACULTY_EMAIL, FACULTY_PASSWORD, "faculty")
         db = SessionLocal()

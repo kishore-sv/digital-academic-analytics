@@ -55,7 +55,7 @@ class TestRBACScope:
         student_id = next(
             s["id"]
             for s in client.get(f"{API}/students?limit=100").json()["data"]
-            if s["roll_number"] == "20231CSE0260"
+            if s["roll_number"] == "26CSE001"
         )
 
         _login(client, "parent@demo.com", "parent123", "parent")
@@ -71,20 +71,20 @@ class TestRBACScope:
         assert response.status_code == 404
 
     def test_student_can_access_self(self, client):
-        _login(client, "20231CSE0260", "student123", "student")
+        _login(client, "26CSE001", "student123", "student")
         _login(client, "admin@demo.com", "admin123", "institution_admin")
         student_id = next(
             s["id"]
             for s in client.get(f"{API}/students?limit=100").json()["data"]
-            if s["roll_number"] == "20231CSE0260"
+            if s["roll_number"] == "26CSE001"
         )
 
-        _login(client, "20231CSE0260", "student123", "student")
+        _login(client, "26CSE001", "student123", "student")
         response = client.get(f"{API}/students/{student_id}")
         assert response.status_code == 200
 
     def test_student_cannot_list_all_students(self, client):
-        _login(client, "20231CSE0260", "student123", "student")
+        _login(client, "26CSE001", "student123", "student")
         response = client.get(f"{API}/students")
         assert response.status_code == 403
 
@@ -109,6 +109,6 @@ class TestRBACScope:
         assert response.status_code == 200
 
     def test_student_cannot_use_prediction_tools(self, client):
-        _login(client, "20231CSE0260", "student123", "student")
+        _login(client, "26CSE001", "student123", "student")
         response = client.post(f"{API}/predictions/performance", json=PREDICTION_BODY)
         assert response.status_code == 403

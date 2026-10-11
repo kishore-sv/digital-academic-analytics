@@ -255,9 +255,9 @@ ALGORITHM_COMPARISONS: dict[str, dict[str, object]] = {
                 "algorithm": "Weighted rule-based engine",
                 "selected": True,
                 "metrics": {
-                    "Accuracy": 0.7485,
-                    "Macro F1": 0.7078,
-                    "High-risk F1": 0.7216,
+                    "Accuracy": 0.8240,
+                    "Macro F1": 0.7795,
+                    "High-risk F1": 0.7512,
                 },
             },
             {

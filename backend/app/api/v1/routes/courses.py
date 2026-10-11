@@ -6,6 +6,7 @@ from app.api.v1.pagination import paginate, paginated_response
 from app.models.course import Course
 from app.models.department import Department
 from app.schemas.academic import CourseCreate, CourseResponse, CourseUpdate
+from app.services.academic_validation_service import validate_course_type
 from app.schemas.common import PaginatedResponse, PaginationParams
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -65,7 +66,7 @@ def create_course(body: CourseCreate, current: AdminUser, db: DbSession):
         name=body.name,
         code=body.code,
         credits=body.credits,
-        course_type=body.course_type,
+        course_type=validate_course_type(body.course_type),
     )
     db.add(course)
     try:
@@ -102,7 +103,7 @@ def update_course(
     if body.credits is not None:
         course.credits = body.credits
     if body.course_type is not None:
-        course.course_type = body.course_type
+        course.course_type = validate_course_type(body.course_type)
     try:
         db.commit()
     except IntegrityError:

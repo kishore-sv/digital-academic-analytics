@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,9 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  StudentPlacementSelectors,
+  type StudentPlacementValue,
+} from "@/components/academic/cascading-selectors";
 import { StudentTable } from "@/components/analytics/student-table";
 import { DataListPage } from "@/components/layout/data-list-page";
-import { useDepartments, usePrograms } from "@/hooks/use-academic";
+import { useDepartments } from "@/hooks/use-academic";
 import {
   useCreateStudent,
   useDeleteStudent,
@@ -29,49 +33,56 @@ import {
 } from "@/hooks/use-students";
 import { showErrorToast } from "@/lib/toast";
 
+const emptyPlacement = (): StudentPlacementValue => ({
+  department_id: "",
+  program_id: "",
+  batch_id: "",
+  class_group_id: "",
+  section_id: "",
+  current_semester_id: "",
+});
+
 export default function AdminStudentsPage() {
-  const { data, isLoading, error } = useStudents();
+  const { data, isLoading, error } = useStudents(1, 100);
   const { data: deptData } = useDepartments();
-  const { data: programData } = usePrograms();
   const students = data?.data ?? [];
   const departments = deptData?.data ?? [];
-  const programs = programData?.data ?? [];
-  const departmentItems = departments.map((d) => ({
-    value: d.id,
-    label: d.name,
-  }));
-  const programItems = programs.map((p) => ({
-    value: p.id,
-    label: p.name,
-  }));
   const createStudent = useCreateStudent();
   const deleteStudent = useDeleteStudent();
   const [filters, setFilters] = useState({
     department_id: "all",
-    branch: "all",
     semester: "all",
+    section: "all",
   });
   const departmentFilterItems = [
     { value: "all", label: "All Departments" },
-    ...departmentItems,
+    ...departments.map((d) => ({ value: d.id, label: d.name })),
   ];
-  const branchFilterItems = useMemo(() => {
-    const branches = [...new Set(students.map((s) => s.branch))].sort();
-    return [
-      { value: "all", label: "All Branches" },
-      ...branches.map((branch) => ({ value: branch, label: branch })),
-    ];
-  }, [students]);
   const semesterFilterItems = useMemo(() => {
-    const semesters = [...new Set(students.map((s) => s.semester))].sort(
-      (a, b) => a - b,
-    );
+    const semesters = [
+      ...new Set(
+        students
+          .map((s) => s.semester_number)
+          .filter((n): n is number => n != null),
+      ),
+    ].sort((a, b) => a - b);
     return [
       { value: "all", label: "All Semesters" },
       ...semesters.map((semester) => ({
         value: String(semester),
         label: `Semester ${semester}`,
       })),
+    ];
+  }, [students]);
+  const sectionFilterItems = useMemo(() => {
+    const codes = [
+      ...new Set(
+        students.map((s) => s.section_code).filter((c): c is string => Boolean(c)),
+      ),
+    ].sort();
+    return [
+      { value: "all", label: "All Sections" },
+      ...codes.map((code) => ({ value: code, label: code })),
     ];
   }, [students]);
   const filteredStudents = useMemo(
@@ -83,12 +94,15 @@ export default function AdminStudentsPage() {
         ) {
           return false;
         }
-        if (filters.branch !== "all" && student.branch !== filters.branch) {
+        if (
+          filters.semester !== "all" &&
+          student.semester_number !== Number(filters.semester)
+        ) {
           return false;
         }
         if (
-          filters.semester !== "all" &&
-          student.semester !== Number(filters.semester)
+          filters.section !== "all" &&
+          student.section_code !== filters.section
         ) {
           return false;
         }
@@ -101,42 +115,33 @@ export default function AdminStudentsPage() {
     name: "",
     roll_number: "",
     password: "",
-    department_id: "",
-    program_id: "",
-    semester: "1",
-    branch: "CSE",
+    placement: emptyPlacement(),
   });
-
-  useEffect(() => {
-    if (departments.length > 0 && !form.department_id) {
-      setForm((current) => ({
-        ...current,
-        department_id: departments[0].id,
-      }));
-    }
-  }, [departments, form.department_id]);
 
   const handleCreate = async () => {
     const name = form.name.trim();
     const rollNumber = form.roll_number.trim();
-    const semester = parseInt(form.semester, 10);
+    const p = form.placement;
 
     if (!name || !rollNumber) {
       showErrorToast({ description: "Name and roll number are required." });
-      return;
-    }
-    if (!form.department_id) {
-      showErrorToast({
-        description: "Select a department, or create one under Departments first.",
-      });
       return;
     }
     if (form.password.length < 6) {
       showErrorToast({ description: "Password must be at least 6 characters." });
       return;
     }
-    if (Number.isNaN(semester) || semester < 1 || semester > 12) {
-      showErrorToast({ description: "Semester must be between 1 and 12." });
+    if (
+      !p.department_id ||
+      !p.program_id ||
+      !p.batch_id ||
+      !p.class_group_id ||
+      !p.section_id ||
+      !p.current_semester_id
+    ) {
+      showErrorToast({
+        description: "Complete academic placement (program through section).",
+      });
       return;
     }
 
@@ -145,21 +150,15 @@ export default function AdminStudentsPage() {
         name,
         roll_number: rollNumber,
         password: form.password,
-        department_id: form.department_id,
-        program_id: form.program_id || undefined,
-        semester,
-        branch: form.branch.trim() || "CSE",
+        department_id: p.department_id,
+        program_id: p.program_id,
+        batch_id: p.batch_id,
+        class_group_id: p.class_group_id,
+        section_id: p.section_id,
+        current_semester_id: p.current_semester_id,
       });
       setOpen(false);
-      setForm({
-        name: "",
-        roll_number: "",
-        password: "",
-        department_id: "",
-        program_id: "",
-        semester: "1",
-        branch: "CSE",
-      });
+      setForm({ name: "", roll_number: "", password: "", placement: emptyPlacement() });
     } catch {
       // Error toast handled by mutation hook.
     }
@@ -195,28 +194,6 @@ export default function AdminStudentsPage() {
             </SelectContent>
           </Select>
           <Select
-            items={branchFilterItems}
-            value={filters.branch}
-            onValueChange={(value) => {
-              if (!value) return;
-              setFilters((current) => ({ ...current, branch: value }));
-            }}
-          >
-            <SelectTrigger className="w-auto min-w-40">
-              <SelectValue placeholder="Branch" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Branches</SelectItem>
-              {branchFilterItems
-                .filter((item) => item.value !== "all")
-                .map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-          <Select
             items={semesterFilterItems}
             value={filters.semester}
             onValueChange={(value) => {
@@ -238,10 +215,32 @@ export default function AdminStudentsPage() {
                 ))}
             </SelectContent>
           </Select>
+          <Select
+            items={sectionFilterItems}
+            value={filters.section}
+            onValueChange={(value) => {
+              if (!value) return;
+              setFilters((current) => ({ ...current, section: value }));
+            }}
+          >
+            <SelectTrigger className="w-auto min-w-36">
+              <SelectValue placeholder="Section" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sections</SelectItem>
+              {sectionFilterItems
+                .filter((item) => item.value !== "all")
+                .map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger render={<Button />}>Add Student</DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add Student</DialogTitle>
             </DialogHeader>
@@ -272,81 +271,18 @@ export default function AdminStudentsPage() {
                     setForm({ ...form, password: e.target.value })
                   }
                 />
-                <p className="text-xs text-muted-foreground">
-                  At least 6 characters (used for student login).
+              </div>
+              {departments.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Add departments, programs, batches, and sections before creating students.
                 </p>
-              </div>
-              <div className="space-y-1">
-                <Label>Department</Label>
-                {departments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Add a department first (Departments menu), then create students.
-                  </p>
-                ) : (
-                  <Select
-                    items={departmentItems}
-                    value={form.department_id}
-                    onValueChange={(v) =>
-                      setForm({ ...form, department_id: v ?? "" })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-              <div className="space-y-1">
-                <Label>Program (optional)</Label>
-                <Select
-                  items={programItems}
-                  value={form.program_id}
-                  onValueChange={(v) =>
-                    setForm({ ...form, program_id: v ?? "" })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select program" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {programs.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label>Semester</Label>
-                  <Input
-                    type="number"
-                    value={form.semester}
-                    onChange={(e) =>
-                      setForm({ ...form, semester: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Branch</Label>
-                  <Input
-                    value={form.branch}
-                    onChange={(e) => setForm({ ...form, branch: e.target.value })}
-                  />
-                </div>
-              </div>
-              <Button
-                onClick={handleCreate}
-                disabled={
-                  createStudent.isPending ||
-                  departments.length === 0 ||
-                  !form.department_id
-                }
-              >
+              ) : (
+                <StudentPlacementSelectors
+                  value={form.placement}
+                  onChange={(placement) => setForm({ ...form, placement })}
+                />
+              )}
+              <Button onClick={handleCreate} disabled={createStudent.isPending}>
                 Create
               </Button>
             </div>

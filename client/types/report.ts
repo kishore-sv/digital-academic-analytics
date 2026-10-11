@@ -50,7 +50,8 @@ export interface AtRiskReportRow {
   risk_level: string;
   department_name?: string | null;
   program_name?: string | null;
-  semester?: number | null;
+  semester_number?: number | null;
+  year_number?: number | null;
   attendance_percentage?: number | null;
   cgpa?: number | null;
   backlog_count?: number | null;

@@ -21,6 +21,21 @@ def disable_rate_limiting():
     limiter.enabled = False
 
 
+@pytest.fixture(scope="session", autouse=True)
+def ensure_seeded_database():
+    """Reseed a minimal slice in CI only — do not wipe a local 2,400-student dev DB."""
+    import os
+
+    if os.environ.get("CI") != "true" and os.environ.get("PYTEST_RESEED") != "1":
+        return
+    try:
+        from scripts.reseed import reseed
+
+        reseed(minimal=True)
+    except Exception:
+        pass
+
+
 @pytest.fixture(scope="module")
 def client():
     from app.main import app

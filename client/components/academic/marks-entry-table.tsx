@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,8 @@ function assessmentTypeLabel(type: string): string {
 interface MarksEntryTableProps {
   grid: MarksGrid | undefined;
   isLoading: boolean;
+  hasAppliedFilters?: boolean;
+  emptyContext?: ReactNode;
   onSave: (entries: {
     enrollment_id: string;
     assessment_id: string;
@@ -52,6 +54,8 @@ interface MarksEntryTableProps {
 export function MarksEntryTable({
   grid,
   isLoading,
+  hasAppliedFilters = false,
+  emptyContext,
   onSave,
   onRegenerate,
   isSaving,
@@ -161,16 +165,26 @@ export function MarksEntryTable({
     return <p className="text-sm text-muted-foreground">Loading marks roster…</p>;
   }
 
-  if (!grid) {
+  if (!hasAppliedFilters || !grid) {
     return (
       <p className="text-sm text-muted-foreground">
-        Select filters and apply to load the marks table.
+        Select filters above and click Apply filters to view students.
       </p>
     );
   }
 
   if (grid.students.length === 0) {
-    return <p className="text-sm text-muted-foreground">No students match the selected filters.</p>;
+    return (
+      <div className="space-y-2 rounded-lg border border-dashed p-6 text-center">
+        <p className="text-sm font-medium">No students found for this selection.</p>
+        {emptyContext && (
+          <p className="text-sm">{emptyContext}</p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Try changing the academic group, section, or course.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -210,7 +224,8 @@ export function MarksEntryTable({
             <TableRow>
               <TableHead className="sticky left-0 z-10 w-12 bg-background text-center">#</TableHead>
               <TableHead className="sticky left-12 z-10 min-w-36 bg-background">Student</TableHead>
-              <TableHead className="sticky left-48 z-10 min-w-28 bg-background">Reg No</TableHead>
+              <TableHead className="sticky left-48 z-10 min-w-28 bg-background">Roll No</TableHead>
+              <TableHead className="min-w-20 text-center">Section</TableHead>
               {grid.assessments.map((a) => (
                 <TableHead key={a.id} className="min-w-20 text-center">
                   <div className="text-xs font-normal text-muted-foreground">
@@ -235,6 +250,9 @@ export function MarksEntryTable({
                 </TableCell>
                 <TableCell className="sticky left-48 z-10 bg-background">
                   {student.roll_number}
+                </TableCell>
+                <TableCell className="text-center text-sm">
+                  {student.section ?? "—"}
                 </TableCell>
                 {student.marks.map((mark) => {
                   const key = cellKey(student.enrollment_id, mark.assessment_id);

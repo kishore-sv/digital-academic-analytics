@@ -28,7 +28,7 @@ def _seed_student_id(client):
     from tests.seed_fixtures import list_students
 
     students = list_students(client)
-    return next(s["id"] for s in students if s["roll_number"] == "20231CSE0260")
+    return next(s["id"] for s in students if s["roll_number"] == "26CSE001")
 
 
 class TestAcademicAPIs:
@@ -169,20 +169,11 @@ class TestAcademicAPIs:
         assert response.status_code == 404
 
     def test_student_create(self, client):
-        _login(client, "admin@demo.com", "admin123", "institution_admin")
-        dept_id = _paginated_data(client.get(f"{API}/departments"))[0]["id"]
+        from tests.academic_helpers import new_student_payload
 
         roll_number = f"20231CSE{uuid.uuid4().hex[:4].upper()}"
-        create = client.post(
-            f"{API}/students",
-            json={
-                "name": "New Student",
-                "roll_number": roll_number,
-                "password": "student123",
-                "department_id": dept_id,
-                "semester": 1,
-                "branch": "CSE",
-            },
-        )
+        payload = new_student_payload(client, roll_number)
+        payload["name"] = "New Student"
+        create = client.post(f"{API}/students", json=payload)
         assert create.status_code == 201
         assert create.json()["roll_number"] == roll_number

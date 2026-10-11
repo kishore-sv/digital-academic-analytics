@@ -4,12 +4,12 @@
 
 ```bash
 docker compose up -d
-cd backend && uv run python scripts/reseed.py --scale 500
+cd backend && uv run python scripts/reseed.py
 uv run uvicorn app.main:app --reload   # port 8000
 cd client && cp .env.example .env && bun run dev   # port 3000
 ```
 
-For CI and fast local tests, use `--scale 100`. For full chart density locally, use `--scale 3000`.
+Pytest reseeds with `scripts/reseed.py --minimal`. The default reseed loads 2,400 students.
 
 ## Development Credentials
 
@@ -17,7 +17,7 @@ For CI and fast local tests, use `--scale 100`. For full chart density locally, 
 |------|-------|----------|
 | Admin | `admin@demo.com` | `admin123` |
 | Faculty | `faculty@demo.com` | `faculty123` |
-| Student | Roll number from seed (e.g. `20240001`) | `student123` |
+| Student | `26CSE001` | `student123` |
 | Parent | `parent@demo.com` | `parent123` |
 
 ## Validation Checklist
@@ -57,4 +57,4 @@ For CI and fast local tests, use `--scale 100`. For full chart density locally, 
 
 ## Automated Coverage
 
-Backend pytest covers auth, RBAC, tenant isolation, academic APIs, analytics chart aggregations, goals, reports, scoped analytics, and the full ML integration flow. CI seeds with `--scale 100`. Client lint and build run in CI.
+Backend pytest covers auth, RBAC, tenant isolation, academic APIs, analytics chart aggregations, goals, reports, scoped analytics, and the full ML integration flow. Pytest reseeds with `--minimal`. Client lint and build run in CI.

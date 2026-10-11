@@ -7,6 +7,7 @@ from app.api.v1.analytics_filters import AnalyticsFilterParams, analytics_filter
 from app.api.v1.helpers import PaginationDep
 from app.models.enrollment import Enrollment, SemesterResult
 from app.models.prediction import PredictionResult
+from app.models.semester import Semester
 from app.models.student import Student
 from app.schemas.academic import AtRiskStudentResponse
 from app.schemas.analytics import AtRiskSummary
@@ -59,7 +60,12 @@ def _enrich_student(db, student: Student, prediction: PredictionResult) -> AtRis
         predicted_at=prediction.created_at,
         department_name=dept_name,
         program_name=program_name,
-        semester=student.semester,
+        semester_number=(
+            student.current_semester.number if student.current_semester else None
+        ),
+        year_number=(
+            student.current_semester.year_number if student.current_semester else None
+        ),
         attendance_percentage=enrollment.attendance_percentage if enrollment else None,
         cgpa=sem_result.cgpa if sem_result else None,
         backlog_count=sem_result.backlog_count if sem_result else None,
@@ -110,7 +116,9 @@ def _apply_at_risk_filters(
             Department.name == department_name
         )
     if semester is not None:
-        query = query.filter(Student.semester == semester)
+        query = query.join(
+            Semester, Student.current_semester_id == Semester.id
+        ).filter(Semester.number == semester)
     if risk_level:
         query = query.filter(PredictionResult.risk_level == risk_level)
 

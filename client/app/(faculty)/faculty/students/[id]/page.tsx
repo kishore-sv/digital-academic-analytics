@@ -21,7 +21,11 @@ export default function FacultyStudentDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={student?.name ?? "Student Detail"}
-        description={student ? `${student.roll_number} · ${student.branch}` : undefined}
+        description={
+          student
+            ? `${student.roll_number} · Sem ${student.semester_number ?? "—"} · ${student.section_code ?? "—"}`
+            : undefined
+        }
       />
       {isLoading && <LoadingState />}
       {error && <ErrorState description="Student not found or access denied." />}

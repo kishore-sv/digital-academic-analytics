@@ -7,16 +7,22 @@ from app.api.v1.routes import (
     at_risk,
     attendance,
     auth,
+    batches,
+    class_groups,
     courses,
     departments,
     faculty,
+    faculty_courses,
     goals,
+    imports,
     institutions,
     parents,
     predictions,
+    program_courses,
     programs,
     reports,
     results,
+    sections,
     student_performance,
     students,
     users,
@@ -27,8 +33,14 @@ api_router = APIRouter()
 api_router.include_router(auth.router)
 api_router.include_router(users.router)
 api_router.include_router(institutions.router)
+api_router.include_router(imports.router)
 api_router.include_router(departments.router)
 api_router.include_router(programs.router)
+api_router.include_router(batches.router)
+api_router.include_router(class_groups.router)
+api_router.include_router(sections.router)
+api_router.include_router(program_courses.router)
+api_router.include_router(faculty_courses.router)
 api_router.include_router(faculty.router)
 api_router.include_router(parents.router)
 api_router.include_router(students.router)

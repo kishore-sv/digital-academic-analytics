@@ -25,6 +25,7 @@ import { TableSerialCell, TableSerialHead } from "@/components/layout/table-seri
 import {
   useCreateDepartment,
   useDeleteDepartment,
+  useUpdateDepartment,
 } from "@/hooks/use-academic-mutations";
 import { useDepartments } from "@/hooks/use-academic";
 
@@ -33,7 +34,10 @@ export default function AdminDepartmentsPage() {
   const departments = data?.data ?? [];
   const createDepartment = useCreateDepartment();
   const deleteDepartment = useDeleteDepartment();
+  const updateDepartment = useUpdateDepartment();
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", code: "", description: "" });
 
   const handleCreate = async () => {
@@ -114,7 +118,22 @@ export default function AdminDepartmentsPage() {
               <TableCell>{d.code}</TableCell>
               <TableCell>{d.name}</TableCell>
               <TableCell>{d.description ?? "—"}</TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-right space-x-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setEditId(d.id);
+                    setForm({
+                      name: d.name,
+                      code: d.code,
+                      description: d.description ?? "",
+                    });
+                    setEditOpen(true);
+                  }}
+                >
+                  Edit
+                </Button>
                 <DeleteConfirmButton
                   itemName={d.name}
                   onConfirm={() => deleteDepartment.mutate(d.id)}
@@ -125,6 +144,45 @@ export default function AdminDepartmentsPage() {
           ))}
         </TableBody>
       </Table>
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Department</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Name</Label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Description</Label>
+              <Input
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+              />
+            </div>
+            <Button
+              onClick={async () => {
+                if (!editId) return;
+                await updateDepartment.mutateAsync({
+                  id: editId,
+                  name: form.name,
+                  description: form.description || undefined,
+                });
+                setEditOpen(false);
+              }}
+              disabled={updateDepartment.isPending}
+            >
+              Save
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DataListPage>
   );
 }

@@ -39,4 +39,4 @@ class TestTenantIsolation:
         _login(client, "admin@demo.com", "admin123")
         roll_numbers = [s["roll_number"] for s in list_students(client)]
         assert "20231ECE9999" not in roll_numbers
-        assert "20231CSE0260" in roll_numbers
+        assert "26CSE001" in roll_numbers

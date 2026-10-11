@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import {
   MarksEntryFiltersBar,
+  MarksEntryAppliedSummary,
   type MarksEntryFilters,
 } from "@/components/academic/marks-entry-filters";
 import { MarksEntryTable } from "@/components/academic/marks-entry-table";
@@ -29,17 +30,27 @@ export function MarksEntryPage({
 }: MarksEntryPageProps) {
   const [draftFilters, setDraftFilters] = useState<MarksEntryFilters>({});
   const [appliedFilters, setAppliedFilters] = useState<MarksEntryFilters>({});
+  const [filtersApplied, setFiltersApplied] = useState(false);
 
-  const { data: grid, isLoading, isError, error, refetch } = useMarksGrid(
-    {
+  const gridFilters = useMemo(
+    () => ({
       course_id: appliedFilters.course_id,
       semester_id: appliedFilters.semester_id,
       department_id: appliedFilters.department_id,
       program_id: appliedFilters.program_id,
-      section: appliedFilters.section,
+      batch_id: appliedFilters.batch_id,
+      class_group_id: appliedFilters.class_group_id,
+      section_id: appliedFilters.section_id,
+      year_number: appliedFilters.year_number,
+      assessment_id: appliedFilters.assessment_id,
       search: appliedFilters.search,
-    },
-    Boolean(appliedFilters.course_id),
+    }),
+    [appliedFilters],
+  );
+
+  const { data: grid, isLoading, isError, error, refetch } = useMarksGrid(
+    gridFilters,
+    Boolean(appliedFilters.course_id) && filtersApplied,
   );
 
   const bulkSave = useBulkMarksGridMutation();
@@ -54,18 +65,32 @@ export function MarksEntryPage({
         onApply={() => {
           if (!draftFilters.course_id) {
             showErrorToast({
-              description: "Select a course / subject, then apply filters.",
+              description: "Select a semester and course, then apply filters.",
+            });
+            return;
+          }
+          if (!draftFilters.semester_id) {
+            showErrorToast({
+              description: "Select a semester for this marks entry context.",
             });
             return;
           }
           setAppliedFilters({ ...draftFilters });
+          setFiltersApplied(true);
         }}
         onReset={() => {
           setDraftFilters({});
           setAppliedFilters({});
+          setFiltersApplied(false);
         }}
         showDepartment={showDepartmentFilter}
       />
+      {filtersApplied && appliedFilters.course_id && (
+        <MarksEntryAppliedSummary
+          filters={appliedFilters}
+          showDepartment={showDepartmentFilter}
+        />
+      )}
       {isError && (
         <p className="text-sm text-destructive">
           {error instanceof Error ? error.message : "Failed to load marks roster."}
@@ -76,6 +101,14 @@ export function MarksEntryPage({
         isLoading={isLoading}
         isSaving={bulkSave.isPending}
         isRegenerating={regenerate.isPending}
+        hasAppliedFilters={filtersApplied && Boolean(appliedFilters.course_id)}
+        emptyContext={
+          <MarksEntryAppliedSummary
+            filters={appliedFilters}
+            showDepartment={showDepartmentFilter}
+            inline
+          />
+        }
         onSave={async (entries) => {
           await bulkSave.mutateAsync({
             entries,

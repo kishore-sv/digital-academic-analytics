@@ -45,7 +45,7 @@ After `scripts/reseed.py`:
 |------|-------|----------|
 | Admin | `admin@prj649.edu` | `admin123` |
 | Faculty | `faculty@prj649.edu` | `faculty123` |
-| Student | `20231CSE0260` | `student123` |
+| Student | `26CSE001` | `student123` |
 | Parent | `parent@prj649.edu` | `parent123` |
 
 ## Structure

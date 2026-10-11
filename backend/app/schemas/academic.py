@@ -3,7 +3,13 @@
 from datetime import date as DateType
 from datetime import datetime
 
+from typing import Literal
+
 from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.utils.academic_display import format_year_number
+
+CourseTypeLiteral = Literal["THEORY", "LAB"]
 
 
 # Institution
@@ -89,17 +95,195 @@ class ProgramResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# Academic Year
+class AcademicYearCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=50)
+    is_current: bool = False
+
+
+class AcademicYearUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=50)
+    is_current: bool | None = None
+
+
+class AcademicYearResponse(BaseModel):
+    id: str
+    name: str
+    is_current: bool
+
+    model_config = {"from_attributes": True}
+
+
+# Semester
+class SemesterCreate(BaseModel):
+    academic_year_id: str
+    number: int = Field(..., ge=1, le=12)
+    name: str = Field(..., min_length=1, max_length=100)
+    year_number: int = Field(..., ge=1, le=8)
+
+
+class SemesterUpdate(BaseModel):
+    number: int | None = Field(default=None, ge=1, le=12)
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    year_number: int | None = Field(default=None, ge=1, le=8)
+
+
+class SemesterResponse(BaseModel):
+    id: str
+    academic_year_id: str
+    number: int
+    name: str
+    year_number: int
+    year_label: str | None = None
+
+    model_config = {"from_attributes": True}
+
+    @field_validator("year_label", mode="before")
+    @classmethod
+    def compute_year_label(cls, v, info):
+        if v is not None:
+            return v
+        data = info.data
+        if "year_number" in data:
+            return format_year_number(data["year_number"])
+        return None
+
+
+# Batch
+class BatchCreate(BaseModel):
+    program_id: str
+    admission_year: int = Field(..., ge=2000, le=2100)
+    code: str = Field(..., min_length=1, max_length=50)
+    name: str = Field(..., min_length=1, max_length=255)
+    is_active: bool = True
+
+
+class BatchUpdate(BaseModel):
+    admission_year: int | None = Field(default=None, ge=2000, le=2100)
+    code: str | None = Field(default=None, min_length=1, max_length=50)
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    is_active: bool | None = None
+
+
+class BatchResponse(BaseModel):
+    id: str
+    program_id: str
+    admission_year: int
+    code: str
+    name: str
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+
+# Class Group
+class ClassGroupCreate(BaseModel):
+    batch_id: str
+    year_number: int = Field(..., ge=1, le=8)
+    code: str = Field(..., min_length=1, max_length=50)
+    name: str = Field(..., min_length=1, max_length=255)
+
+
+class ClassGroupUpdate(BaseModel):
+    year_number: int | None = Field(default=None, ge=1, le=8)
+    code: str | None = Field(default=None, min_length=1, max_length=50)
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+
+
+class ClassGroupResponse(BaseModel):
+    id: str
+    batch_id: str
+    year_number: int
+    year_label: str | None = None
+    code: str
+    name: str
+
+    model_config = {"from_attributes": True}
+
+
+# Section
+class SectionCreate(BaseModel):
+    class_group_id: str
+    code: str = Field(..., min_length=1, max_length=50)
+    name: str = Field(..., min_length=1, max_length=255)
+    is_active: bool = True
+
+
+class SectionUpdate(BaseModel):
+    code: str | None = Field(default=None, min_length=1, max_length=50)
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    is_active: bool | None = None
+
+
+class SectionResponse(BaseModel):
+    id: str
+    class_group_id: str
+    code: str
+    name: str
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+
+# Program Course (curriculum)
+class ProgramCourseCreate(BaseModel):
+    program_id: str
+    course_id: str
+    semester_number: int = Field(..., ge=1, le=12)
+
+
+class ProgramCourseUpdate(BaseModel):
+    semester_number: int | None = Field(default=None, ge=1, le=12)
+
+
+class ProgramCourseResponse(BaseModel):
+    id: str
+    program_id: str
+    course_id: str
+    semester_number: int
+
+    model_config = {"from_attributes": True}
+
+
+# Faculty Course assignment
+class FacultyCourseCreate(BaseModel):
+    faculty_id: str
+    course_id: str
+    semester_id: str
+    section_id: str | None = None
+
+
+class FacultyCourseUpdate(BaseModel):
+    section_id: str | None = None
+
+
+class FacultyCourseResponse(BaseModel):
+    id: str
+    faculty_id: str
+    course_id: str
+    semester_id: str
+    section_id: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
 # Faculty
 class FacultyCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     email: EmailStr
     password: str = Field(..., min_length=6)
     department_id: str
+    employee_id: str = Field(..., min_length=1, max_length=50)
+    designation: str | None = Field(default=None, max_length=100)
+    phone: str | None = Field(default=None, max_length=30)
 
 
 class FacultyUpdate(BaseModel):
     name: str | None = None
     department_id: str | None = None
+    employee_id: str | None = Field(default=None, min_length=1, max_length=50)
+    designation: str | None = Field(default=None, max_length=100)
+    phone: str | None = Field(default=None, max_length=30)
 
 
 class FacultyResponse(BaseModel):
@@ -108,27 +292,40 @@ class FacultyResponse(BaseModel):
     email: str | None = None
     department_id: str
     user_id: str
+    employee_id: str
+    designation: str | None = None
+    phone: str | None = None
 
     model_config = {"from_attributes": True}
 
 
 # Parent
+class ParentStudentLink(BaseModel):
+    student_id: str
+    relationship_type: str = Field(default="GUARDIAN", max_length=30)
+    is_primary_guardian: bool = False
+
+
 class ParentCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     email: EmailStr
     password: str = Field(..., min_length=6)
-    student_ids: list[str] = Field(default_factory=list)
+    phone: str | None = Field(default=None, max_length=30)
+    student_links: list[ParentStudentLink] = Field(default_factory=list)
 
 
 class ParentUpdate(BaseModel):
     name: str | None = None
+    phone: str | None = Field(default=None, max_length=30)
 
 
 class ParentResponse(BaseModel):
     id: str
     name: str
     user_id: str
+    phone: str | None = None
     linked_student_ids: list[str] = []
+    student_links: list[ParentStudentLink] = []
 
     model_config = {"from_attributes": True}
 
@@ -138,25 +335,32 @@ class StudentCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     roll_number: str = Field(..., min_length=1, max_length=50)
     password: str = Field(..., min_length=6)
-    department_id: str = Field(..., min_length=1)
-    program_id: str | None = None
-    semester: int = Field(default=1, ge=1, le=12)
-    branch: str = Field(default="CSE", max_length=50)
-
-    @field_validator("program_id", mode="before")
-    @classmethod
-    def normalize_program_id(cls, value: str | None) -> str | None:
-        if value is None or value == "":
-            return None
-        return value
+    department_id: str
+    program_id: str
+    batch_id: str
+    class_group_id: str
+    section_id: str
+    current_semester_id: str
+    admission_date: DateType | None = None
 
 
 class StudentUpdate(BaseModel):
     name: str | None = None
     department_id: str | None = None
     program_id: str | None = None
-    semester: int | None = Field(default=None, ge=1, le=12)
-    branch: str | None = None
+    batch_id: str | None = None
+    class_group_id: str | None = None
+    section_id: str | None = None
+    current_semester_id: str | None = None
+    admission_date: DateType | None = None
+
+
+class StudentSemesterSummary(BaseModel):
+    id: str
+    number: int
+    name: str
+    year_number: int
+    year_label: str
 
 
 class StudentResponse(BaseModel):
@@ -164,10 +368,17 @@ class StudentResponse(BaseModel):
     roll_number: str
     name: str
     department_id: str
-    program_id: str | None = None
-    semester: int
-    branch: str
-    section: str | None = None
+    program_id: str
+    batch_id: str
+    class_group_id: str
+    section_id: str
+    current_semester_id: str
+    admission_date: DateType | None = None
+    semester_number: int | None = None
+    year_number: int | None = None
+    year_label: str | None = None
+    section_code: str | None = None
+    batch_name: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -178,14 +389,14 @@ class CourseCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     code: str = Field(..., min_length=1, max_length=50)
     credits: int = Field(default=3, ge=1, le=6)
-    course_type: str = Field(default="THEORY", max_length=50)
+    course_type: CourseTypeLiteral = "THEORY"
 
 
 class CourseUpdate(BaseModel):
     name: str | None = None
     code: str | None = None
     credits: int | None = Field(default=None, ge=1, le=6)
-    course_type: str | None = None
+    course_type: CourseTypeLiteral | None = None
 
 
 class CourseResponse(BaseModel):
@@ -271,12 +482,14 @@ class EnrollmentCreate(BaseModel):
     student_id: str
     course_id: str
     semester_id: str
+    section_id: str | None = None
     attendance_percentage: float | None = Field(default=None, ge=0, le=100)
     study_hours_per_week: float | None = Field(default=None, ge=0, le=60)
     assignment_completion_pct: float | None = Field(default=None, ge=0, le=100)
 
 
 class EnrollmentUpdate(BaseModel):
+    section_id: str | None = None
     attendance_percentage: float | None = Field(default=None, ge=0, le=100)
     study_hours_per_week: float | None = Field(default=None, ge=0, le=60)
     assignment_completion_pct: float | None = Field(default=None, ge=0, le=100)
@@ -287,6 +500,7 @@ class EnrollmentResponse(BaseModel):
     student_id: str
     course_id: str
     semester_id: str
+    section_id: str | None = None
     attendance_percentage: float | None = None
     study_hours_per_week: float | None = None
     assignment_completion_pct: float | None = None
@@ -367,7 +581,8 @@ class AtRiskStudentResponse(BaseModel):
     predicted_at: datetime | None = None
     department_name: str | None = None
     program_name: str | None = None
-    semester: int | None = None
+    semester_number: int | None = None
+    year_number: int | None = None
     attendance_percentage: float | None = None
     cgpa: float | None = None
     backlog_count: int | None = None
@@ -432,6 +647,7 @@ class MarksGridStudentRow(BaseModel):
     student_name: str
     roll_number: str
     section: str | None = None
+    section_id: str | None = None
     attendance_percentage: float | None = None
     marks: list[MarkCell]
     total_marks: float | None = None
@@ -449,18 +665,26 @@ class MarksGridResponse(BaseModel):
 
 
 class AttendanceRosterRow(BaseModel):
-    enrollment_id: str
+    enrollment_id: str | None = None
     student_id: str
     student_name: str
     roll_number: str
     section: str | None = None
+    # Stored enrollment percentage used by reports and ML. Not a date-range figure.
     attendance_percentage: float | None = None
+    range_present: int | None = None
+    range_absent: int | None = None
+    # Present / (present + absent) inside the selected dates. Omitted without a date window.
+    range_percentage: float | None = None
 
 
 class AttendanceRosterResponse(BaseModel):
-    course_id: str
-    course_name: str
-    course_code: str
+    course_id: str | None = None
+    course_name: str | None = None
+    course_code: str | None = None
+    date_from: DateType | None = None
+    date_to: DateType | None = None
+    status: str | None = None
     students: list[AttendanceRosterRow]
 
 

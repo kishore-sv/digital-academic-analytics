@@ -25,6 +25,9 @@ def _to_response(faculty: Faculty) -> FacultyResponse:
         email=faculty.user.email if faculty.user else None,
         department_id=str(faculty.department_id),
         user_id=str(faculty.user_id),
+        employee_id=faculty.employee_id,
+        designation=faculty.designation,
+        phone=faculty.phone,
     )
 
 
@@ -73,15 +76,18 @@ def create_faculty(body: FacultyCreate, current: AdminUser, db: DbSession):
     faculty = Faculty(
         institution_id=current.institution_id,
         user_id=user.id,
+        employee_id=body.employee_id,
         name=body.name,
         department_id=dept_id,
+        designation=body.designation,
+        phone=body.phone,
     )
     db.add(faculty)
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already exists")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Faculty already exists")
     db.refresh(faculty, ["user"])
     return _to_response(faculty)
 
@@ -111,7 +117,17 @@ def update_faculty(
         dept_id = parse_uuid(body.department_id, "department_id")
         get_entity_or_404(db, Department, dept_id, current.institution_id)
         faculty.department_id = dept_id
-    db.commit()
+    if body.employee_id is not None:
+        faculty.employee_id = body.employee_id
+    if body.designation is not None:
+        faculty.designation = body.designation
+    if body.phone is not None:
+        faculty.phone = body.phone
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Faculty conflict")
     db.refresh(faculty, ["user"])
     return _to_response(faculty)
 

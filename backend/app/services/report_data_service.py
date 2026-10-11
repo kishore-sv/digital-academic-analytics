@@ -125,7 +125,12 @@ def _enrich_at_risk_row(db: Session, student: Student, prediction: PredictionRes
         predicted_at=prediction.created_at,
         department_name=student.department.name if student.department else None,
         program_name=student.program.name if student.program else None,
-        semester=student.semester,
+        semester_number=(
+            student.current_semester.number if student.current_semester else None
+        ),
+        year_number=(
+            student.current_semester.year_number if student.current_semester else None
+        ),
         attendance_percentage=enrollment.attendance_percentage if enrollment else None,
         cgpa=sem_result.cgpa if sem_result else None,
         backlog_count=sem_result.backlog_count if sem_result else None,

@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAtRiskStudents, useDepartments } from "@/hooks/use-academic";
+import { useAcademicYears, useSemesters } from "@/hooks/use-academic-structure";
 import {
   useAtRiskSummary,
   useDepartmentRiskStacks,
@@ -59,7 +60,16 @@ export default function AdminAtRiskPage() {
     () => (deptData?.data ?? []).map((d) => d.name).sort(),
     [deptData],
   );
-  const semesters = useMemo(() => Array.from({ length: 8 }, (_, i) => i + 1), []);
+  const { data: years } = useAcademicYears();
+  const currentYear = years?.find((y) => y.is_current) ?? years?.[0];
+  const { data: semesterRows } = useSemesters(currentYear?.id);
+  const semesters = useMemo(
+    () =>
+      [...new Set((semesterRows ?? []).map((s) => s.number))].sort(
+        (a, b) => a - b,
+      ),
+    [semesterRows],
+  );
 
   function handleTableFiltersChange(next: AtRiskTableFilters) {
     setTableFilters(next);
@@ -163,7 +173,7 @@ export default function AdminAtRiskPage() {
                 <TableCell>{s.roll_number}</TableCell>
                 <TableCell>{s.student_name}</TableCell>
                 <TableCell>{s.department_name ?? "—"}</TableCell>
-                <TableCell>{s.semester ?? "—"}</TableCell>
+                <TableCell>{s.semester_number ?? "—"}</TableCell>
                 <TableCell><RiskBadge level={s.risk_level} /></TableCell>
                 <TableCell>{s.risk_score.toFixed(1)}</TableCell>
                 <TableCell>

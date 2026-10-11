@@ -29,10 +29,14 @@ class Enrollment(Base, TimestampMixin, TenantMixin):
     attendance_percentage: Mapped[float | None] = mapped_column(Float, nullable=True)
     study_hours_per_week: Mapped[float | None] = mapped_column(Float, nullable=True)
     assignment_completion_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    section_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("sections.id"), nullable=True
+    )
 
     student = relationship("Student", back_populates="enrollments")
     course = relationship("Course", back_populates="enrollments")
     semester = relationship("Semester", back_populates="enrollments")
+    section = relationship("Section", back_populates="enrollments")
     assessment_marks = relationship("AssessmentMark", back_populates="enrollment")
     course_result = relationship("CourseResult", back_populates="enrollment", uselist=False)
     attendances = relationship("Attendance", back_populates="enrollment")

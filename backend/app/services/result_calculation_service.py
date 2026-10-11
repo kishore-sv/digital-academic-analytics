@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.course import Course
 from app.models.enrollment import (
@@ -16,6 +16,7 @@ from app.models.enrollment import (
 )
 from app.models.semester import Semester
 from app.models.student import Student
+from app.utils.academic_display import semester_is_after
 
 # Grade point mapping (10-point scale)
 GRADE_POINTS: dict[str, float] = {
@@ -267,10 +268,24 @@ def recalculate_semester_result(
         )
         db.add(sr)
 
-    # Update student current semester
-    student = db.query(Student).filter(Student.id == student_id).first()
-    if student and semester and semester.number > student.semester:
-        student.semester = semester.number
+    # Update student current semester when processed term is ahead
+    if semester:
+        student = (
+            db.query(Student)
+            .filter(Student.id == student_id)
+            .options(
+                joinedload(Student.current_semester).joinedload(Semester.academic_year),
+            )
+            .first()
+        )
+        processed = (
+            db.query(Semester)
+            .options(joinedload(Semester.academic_year))
+            .filter(Semester.id == semester_id)
+            .first()
+        )
+        if student and processed and semester_is_after(processed, student.current_semester):
+            student.current_semester_id = processed.id
 
     return sr
 

@@ -160,7 +160,7 @@ def _uv_sync(directory: Path, label: str) -> None:
     _run(["uv", "sync"], cwd=directory)
 
 
-def _migrate_and_seed(cse_demo: bool, skip_seed: bool) -> None:
+def _migrate_and_seed(minimal: bool, skip_seed: bool) -> None:
     print("\n=== Database migrations ===")
     _run(["uv", "run", "alembic", "upgrade", "head"], cwd=BACKEND)
 
@@ -170,8 +170,8 @@ def _migrate_and_seed(cse_demo: bool, skip_seed: bool) -> None:
 
     print("\n=== Seed database ===")
     cmd = ["uv", "run", "python", "scripts/reseed.py"]
-    if cse_demo:
-        cmd.append("--cse-demo")
+    if minimal:
+        cmd.append("--minimal")
     _run(cmd, cwd=BACKEND)
 
 
@@ -263,9 +263,9 @@ def main() -> None:
         help="Skip database reseed (migrations still run).",
     )
     parser.add_argument(
-        "--cse-demo",
+        "--minimal",
         action="store_true",
-        help="Seed CSE/ECE/IST demo (~60 students/branch); default is bulk scale=100.",
+        help="Seed a small CSE slice instead of the 2,400-student dataset.",
     )
     parser.add_argument(
         "--skip-ml",
@@ -296,7 +296,7 @@ def main() -> None:
     _uv_sync(BACKEND, "Backend")
     if not args.skip_ml:
         _uv_sync(ML, "ML")
-    _migrate_and_seed(cse_demo=args.cse_demo, skip_seed=args.no_seed)
+    _migrate_and_seed(minimal=args.minimal, skip_seed=args.no_seed)
 
     if not args.skip_client:
         _client_install()

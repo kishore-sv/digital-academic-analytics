@@ -30,3 +30,5 @@ class Course(Base, TimestampMixin, TenantMixin):
     enrollments = relationship("Enrollment", back_populates="course")
     assessments = relationship("Assessment", back_populates="course")
     faculty_links = relationship("FacultyCourse", back_populates="course")
+    program_courses = relationship("ProgramCourse", back_populates="course")
+    course_backlogs = relationship("CourseBacklog", back_populates="course")

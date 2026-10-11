@@ -6,6 +6,7 @@ import type {
   AnalyticsFilters,
   AtRiskSummary,
   AttendancePerformancePoint,
+  AttendanceTrend,
   ChartBucket,
   DepartmentAnalytics,
   DepartmentRiskStack,
@@ -120,6 +121,15 @@ export function useAttendancePerformance(filters?: AnalyticsFilters, scoped = fa
     queryKey: ["analytics", "attendance-performance", scoped, filters],
     queryFn: () =>
       apiFetch<AttendancePerformancePoint[]>(withFilters(base, filters)),
+  });
+}
+
+export function useAttendanceTrend(filters?: AnalyticsFilters, enabled = true) {
+  return useQuery({
+    queryKey: ["analytics", "attendance-trend", filters],
+    queryFn: () =>
+      apiFetch<AttendanceTrend>(withFilters("/analytics/attendance-trend", filters)),
+    enabled,
   });
 }
 

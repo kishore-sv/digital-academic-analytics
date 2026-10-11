@@ -5,6 +5,7 @@ from app.api.v1.analytics_filters import AnalyticsFilterParams, analytics_filter
 from app.schemas.analytics import (
     ActualVsPredictedPoint,
     AttendancePerformancePoint,
+    AttendanceTrend,
     CourseAnalytics,
     DepartmentAnalytics,
     DepartmentRiskStack,
@@ -21,6 +22,7 @@ from app.schemas.analytics import (
 from app.services.analytics_aggregations import (
     get_actual_vs_predicted,
     get_attendance_performance,
+    get_attendance_trend,
     get_cgpa_distribution,
     get_department_analytics_filtered,
     get_department_risk_stacks,
@@ -117,6 +119,15 @@ def analytics_attendance_performance(
     filters: AnalyticsFilterParams = Depends(analytics_filter_dep),
 ):
     return get_attendance_performance(db, current.institution_id, filters)
+
+
+@router.get("/attendance-trend", response_model=AttendanceTrend)
+def analytics_attendance_trend(
+    current: AdminUser,
+    db: DbSession,
+    filters: AnalyticsFilterParams = Depends(analytics_filter_dep),
+):
+    return get_attendance_trend(db, current.institution_id, filters)
 
 
 @router.get("/performance-indicators", response_model=PerformanceIndicators)

@@ -31,12 +31,15 @@ uv run alembic upgrade head
 
 ```bash
 cd backend
-uv run python scripts/reseed.py   # full reset + seed
-# or
-uv run python scripts/seed.py     # seed if empty
+uv run python scripts/reseed.py            # drop, recreate, 2,400-student dataset
+uv run python scripts/reseed.py --minimal # small slice for tests
+# or, only when the database is empty:
+uv run python scripts/seed.py
 ```
 
 Development credentials (see `app/core/seed_data.py`):
 
-- Admin: `admin@prj649.edu` / `admin123`
-- Student: `20231CSE0260` / `student123`
+- Admin: `admin@demo.com` / `admin123`
+- Faculty: `faculty@demo.com` / `faculty123`
+- Student: `26CSE001` / `student123`
+- Parent: `parent@demo.com` / `parent123`

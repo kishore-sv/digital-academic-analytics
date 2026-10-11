@@ -6,7 +6,82 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { IconSelector, IconCheck, IconChevronUp, IconChevronDown } from "@tabler/icons-react"
 
-const Select = SelectPrimitive.Root
+type SelectItemEntry = { value: unknown; label: React.ReactNode }
+
+function resolveItemLabel(
+  label: string | undefined,
+  children: React.ReactNode,
+): React.ReactNode {
+  if (label != null) {
+    return label
+  }
+  if (
+    typeof children === "string" ||
+    typeof children === "number" ||
+    typeof children === "bigint"
+  ) {
+    return children
+  }
+  return children
+}
+
+function collectItemsFromChildren(children: React.ReactNode): SelectItemEntry[] {
+  const items: SelectItemEntry[] = []
+
+  const visit = (nodes: React.ReactNode) => {
+    React.Children.forEach(nodes, (child) => {
+      if (!React.isValidElement(child)) {
+        return
+      }
+
+      if (child.type === SelectItem) {
+        const props = child.props as SelectPrimitive.Item.Props
+        items.push({
+          value: props.value,
+          label: resolveItemLabel(props.label, props.children),
+        })
+        return
+      }
+
+      if (
+        child.type === SelectContent ||
+        child.type === SelectGroup ||
+        child.type === SelectPrimitive.List
+      ) {
+        visit(
+          (child.props as { children?: React.ReactNode }).children,
+        )
+        return
+      }
+
+      const nested = (child.props as { children?: React.ReactNode }).children
+      if (nested != null) {
+        visit(nested)
+      }
+    })
+  }
+
+  visit(children)
+  return items
+}
+
+function Select<Value, Multiple extends boolean | undefined = false>({
+  items: itemsProp,
+  children,
+  ...props
+}: SelectPrimitive.Root.Props<Value, Multiple>) {
+  const collectedItems = React.useMemo(
+    () => collectItemsFromChildren(children),
+    [children],
+  )
+  const items = itemsProp ?? collectedItems
+
+  return (
+    <SelectPrimitive.Root items={items} {...props}>
+      {children}
+    </SelectPrimitive.Root>
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
@@ -111,11 +186,17 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  label,
   ...props
 }: SelectPrimitive.Item.Props) {
+  const stringLabel =
+    label ??
+    (typeof children === "string" ? children : undefined)
+
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      label={stringLabel}
       className={cn(
         "relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-highlighted:bg-accent data-highlighted:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className

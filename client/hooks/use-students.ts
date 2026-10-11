@@ -10,10 +10,30 @@ export interface Student {
   roll_number: string;
   name: string;
   department_id: string;
-  program_id: string | null;
-  semester: number;
-  branch: string;
+  program_id: string;
+  batch_id: string;
+  class_group_id: string;
+  section_id: string;
+  current_semester_id: string;
+  semester_number?: number | null;
+  year_number?: number | null;
+  year_label?: string | null;
+  section_code?: string | null;
+  batch_name?: string | null;
 }
+
+export type StudentCreateBody = {
+  name: string;
+  roll_number: string;
+  password: string;
+  department_id: string;
+  program_id: string;
+  batch_id: string;
+  class_group_id: string;
+  section_id: string;
+  current_semester_id: string;
+  admission_date?: string;
+};
 
 export function useStudents(page = 1, limit = 50) {
   return useQuery({
@@ -43,15 +63,7 @@ export function useMyStudentProfile() {
 export function useCreateStudent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: {
-      name: string;
-      roll_number: string;
-      password: string;
-      department_id: string;
-      program_id?: string;
-      semester?: number;
-      branch?: string;
-    }) =>
+    mutationFn: (body: StudentCreateBody) =>
       apiFetch<Student>("/students", {
         method: "POST",
         body: JSON.stringify(body),
@@ -78,8 +90,11 @@ export function useUpdateStudent() {
       name?: string;
       department_id?: string;
       program_id?: string;
-      semester?: number;
-      branch?: string;
+      batch_id?: string;
+      class_group_id?: string;
+      section_id?: string;
+      current_semester_id?: string;
+      admission_date?: string | null;
     }) =>
       apiFetch<Student>(`/students/${id}`, {
         method: "PATCH",

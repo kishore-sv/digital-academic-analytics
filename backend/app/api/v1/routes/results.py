@@ -18,6 +18,10 @@ from app.schemas.academic import (
     SemesterResultUpdate,
 )
 from app.schemas.common import PaginatedResponse, PaginationParams
+from app.services.academic_validation_service import (
+    assert_enrollment_unique,
+    validate_enrollment,
+)
 from app.services.authorization_service import assert_enrollment_access, assert_student_access
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -58,6 +62,7 @@ def _to_enrollment(enrollment: Enrollment) -> EnrollmentResponse:
         student_id=str(enrollment.student_id),
         course_id=str(enrollment.course_id),
         semester_id=str(enrollment.semester_id),
+        section_id=str(enrollment.section_id) if enrollment.section_id else None,
         attendance_percentage=enrollment.attendance_percentage,
         study_hours_per_week=enrollment.study_hours_per_week,
         assignment_completion_pct=enrollment.assignment_completion_pct,
@@ -91,22 +96,39 @@ def create_enrollment(body: EnrollmentCreate, current: AdminOrFacultyUser, db: D
     student_id = parse_uuid(body.student_id, "student_id")
     course_id = parse_uuid(body.course_id, "course_id")
     semester_id = parse_uuid(body.semester_id, "semester_id")
-    get_entity_or_404(db, Student, student_id, current.institution_id)
-    from app.models.course import Course
-
+    section_id = parse_uuid(body.section_id, "section_id") if body.section_id else None
+    student = validate_enrollment(
+        db,
+        current.institution_id,
+        student_id=student_id,
+        course_id=course_id,
+        semester_id=semester_id,
+        section_id=section_id,
+    )
     get_entity_or_404(db, Course, course_id, current.institution_id)
     get_entity_or_404(db, Semester, semester_id, current.institution_id)
+    assert_enrollment_unique(
+        db, current.institution_id, student_id, course_id, semester_id
+    )
     enrollment = Enrollment(
         institution_id=current.institution_id,
         student_id=student_id,
         course_id=course_id,
         semester_id=semester_id,
+        section_id=section_id or student.section_id,
         attendance_percentage=body.attendance_percentage,
         study_hours_per_week=body.study_hours_per_week,
         assignment_completion_pct=body.assignment_completion_pct,
     )
     db.add(enrollment)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Enrollment already exists",
+        )
     db.refresh(enrollment)
     return _to_enrollment(enrollment)
 
@@ -122,6 +144,17 @@ def update_enrollment(
         db, Enrollment, parse_uuid(enrollment_id), current.institution_id
     )
     assert_enrollment_access(db, current.user, enrollment.id)
+    if body.section_id is not None:
+        section_id = parse_uuid(body.section_id, "section_id") if body.section_id else None
+        validate_enrollment(
+            db,
+            current.institution_id,
+            student_id=enrollment.student_id,
+            course_id=enrollment.course_id,
+            semester_id=enrollment.semester_id,
+            section_id=section_id,
+        )
+        enrollment.section_id = section_id
     if body.attendance_percentage is not None:
         enrollment.attendance_percentage = body.attendance_percentage
     if body.study_hours_per_week is not None:

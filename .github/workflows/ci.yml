@@ -35,7 +35,6 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync
       - run: uv run alembic upgrade head
-      - run: uv run python scripts/seed.py --scale 100
       - run: uv run ruff check app tests
       - run: uv run pytest
 

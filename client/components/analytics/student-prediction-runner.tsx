@@ -78,7 +78,8 @@ export function StudentPredictionRunner({
       )}
       {selected && (
         <p className="text-sm text-muted-foreground">
-          {selected.name} · {selected.branch} · Semester {selected.semester}
+          {selected.name} · Sem {selected.semester_number ?? "—"} ·{" "}
+          {selected.section_code ?? "—"}
         </p>
       )}
       {error && <ErrorState description="Prediction failed for selected student." />}

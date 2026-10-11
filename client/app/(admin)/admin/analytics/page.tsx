@@ -118,7 +118,11 @@ export default function AdminAnalyticsPage() {
               </ChartShell>
             </ChartCard>
             <ChartCard title="Pass / Fail Trend">
-              <ChartShell isLoading={passFail.isLoading} isEmpty={!passFail.data?.length}>
+              <ChartShell
+                isLoading={passFail.isLoading}
+                isEmpty={!passFail.data?.some((point) => point.pass_count > 0 || point.fail_count > 0)}
+                emptyTitle="No pass/fail results for this selection."
+              >
                 {passFail.data && <PassFailChart data={passFail.data} />}
               </ChartShell>
             </ChartCard>

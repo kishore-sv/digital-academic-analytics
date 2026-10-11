@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.models.course import Course
 from app.models.enrollment import Assessment, AssessmentMark, Enrollment
-from app.models.program import Program
 from app.models.semester import Semester
 from app.models.student import Student
 STANDARD_ASSESSMENTS: list[tuple[str, str, int]] = [
@@ -66,35 +65,66 @@ def filter_enrollments_query(
     db: Session,
     institution_id: uuid.UUID,
     *,
-    course_id: uuid.UUID,
+    course_id: uuid.UUID | None = None,
+    academic_year_id: uuid.UUID | None = None,
     semester_id: uuid.UUID | None = None,
     department_id: uuid.UUID | None = None,
     program_id: uuid.UUID | None = None,
-    section: str | None = None,
+    batch_id: uuid.UUID | None = None,
+    class_group_id: uuid.UUID | None = None,
+    section_id: uuid.UUID | None = None,
+    year_number: int | None = None,
     search: str | None = None,
     accessible_student_ids: list[uuid.UUID] | None = None,
+    course_ids: list[uuid.UUID] | None = None,
+    load_marks: bool = True,
 ):
     query = (
         db.query(Enrollment)
         .join(Student, Enrollment.student_id == Student.id)
-        .filter(
-            Enrollment.institution_id == institution_id,
-            Enrollment.course_id == course_id,
-        )
-        .options(
-            joinedload(Enrollment.student),
+        .filter(Enrollment.institution_id == institution_id)
+    )
+    if course_id:
+        query = query.filter(Enrollment.course_id == course_id)
+    elif course_ids is not None:
+        if not course_ids:
+            query = query.filter(Enrollment.id == None)  # noqa: E711
+        else:
+            query = query.filter(Enrollment.course_id.in_(course_ids))
+    if load_marks:
+        query = query.options(
+            joinedload(Enrollment.student).joinedload(Student.section),
             joinedload(Enrollment.course_result),
             joinedload(Enrollment.assessment_marks).joinedload(AssessmentMark.assessment),
         )
-    )
+    else:
+        query = query.options(joinedload(Enrollment.student).joinedload(Student.section))
+    if academic_year_id and not semester_id:
+        query = query.filter(
+            Enrollment.semester_id.in_(
+                db.query(Semester.id).filter(
+                    Semester.institution_id == institution_id,
+                    Semester.academic_year_id == academic_year_id,
+                )
+            )
+        )
     if semester_id:
         query = query.filter(Enrollment.semester_id == semester_id)
     if department_id:
         query = query.filter(Student.department_id == department_id)
     if program_id:
         query = query.filter(Student.program_id == program_id)
-    if section:
-        query = query.filter(Student.section == section)
+    if batch_id:
+        query = query.filter(Student.batch_id == batch_id)
+    if class_group_id:
+        query = query.filter(Student.class_group_id == class_group_id)
+    if section_id:
+        query = query.filter(Student.section_id == section_id)
+    if year_number is not None:
+        query = query.join(
+            Semester,
+            Student.current_semester_id == Semester.id,
+        ).filter(Semester.year_number == year_number)
     if search:
         pattern = f"%{search}%"
         query = query.filter(
@@ -114,7 +144,11 @@ def build_marks_grid(
     semester_id: uuid.UUID | None = None,
     department_id: uuid.UUID | None = None,
     program_id: uuid.UUID | None = None,
-    section: str | None = None,
+    batch_id: uuid.UUID | None = None,
+    class_group_id: uuid.UUID | None = None,
+    section_id: uuid.UUID | None = None,
+    year_number: int | None = None,
+    assessment_id: uuid.UUID | None = None,
     search: str | None = None,
     accessible_student_ids: list[uuid.UUID] | None = None,
 ) -> dict:
@@ -124,12 +158,14 @@ def build_marks_grid(
 
     ensure_standard_assessments(db, institution_id, course_id)
 
-    assessments = (
+    assessment_query = (
         db.query(Assessment)
         .filter(Assessment.course_id == course_id, Assessment.institution_id == institution_id)
         .order_by(Assessment.assessment_type, Assessment.name)
-        .all()
     )
+    if assessment_id:
+        assessment_query = assessment_query.filter(Assessment.id == assessment_id)
+    assessments = assessment_query.all()
 
     enrollments = filter_enrollments_query(
         db,
@@ -138,7 +174,10 @@ def build_marks_grid(
         semester_id=semester_id,
         department_id=department_id,
         program_id=program_id,
-        section=section,
+        batch_id=batch_id,
+        class_group_id=class_group_id,
+        section_id=section_id,
+        year_number=year_number,
         search=search,
         accessible_student_ids=accessible_student_ids,
     ).all()
@@ -171,7 +210,8 @@ def build_marks_grid(
             "student_id": str(student.id),
             "student_name": student.name,
             "roll_number": student.roll_number,
-            "section": student.section,
+            "section": student.section.code if student.section else None,
+            "section_id": str(student.section_id) if student.section_id else None,
             "attendance_percentage": enrollment.attendance_percentage,
             "marks": mark_cells,
             "total_marks": cr.end_marks if cr else None,

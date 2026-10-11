@@ -33,7 +33,7 @@ export function StudentTable({
           <TableSerialHead />
           <TableHead>Roll Number</TableHead>
           <TableHead>Name</TableHead>
-          <TableHead>Branch</TableHead>
+          <TableHead>Section</TableHead>
           <TableHead>Semester</TableHead>
           {(detailHref || onDelete) && (
             <TableHead className="text-right">Actions</TableHead>
@@ -46,8 +46,8 @@ export function StudentTable({
             <TableSerialCell index={index} start={serialStart} />
             <TableCell className="font-mono text-sm">{student.roll_number}</TableCell>
             <TableCell>{student.name}</TableCell>
-            <TableCell>{student.branch}</TableCell>
-            <TableCell>{student.semester}</TableCell>
+            <TableCell>{student.section_code ?? "—"}</TableCell>
+            <TableCell>{student.semester_number ?? "—"}</TableCell>
             {(detailHref || onDelete) && (
               <TableCell className="space-x-2 text-right">
                 {detailHref && (

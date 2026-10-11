@@ -28,3 +28,5 @@ class Program(Base, TimestampMixin, TenantMixin):
 
     department = relationship("Department", back_populates="programs")
     students = relationship("Student", back_populates="program")
+    batches = relationship("Batch", back_populates="program")
+    program_courses = relationship("ProgramCourse", back_populates="program")
